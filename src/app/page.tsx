@@ -85,7 +85,7 @@ export default function Home() {
               <img 
                 src="https://k6hrqrxuu8obbfwn.public.blob.vercel-storage.com/temp/dc87a6e4-9aa4-45e7-9d82-45e7a1ba49c7.png" 
                 alt="Protocolo CMYK Logo" 
-                className="w-12 h-12 object-contain"
+                className="w-20 h-20 object-contain"
               />
               <div>
                 <h1 className="text-xl font-bold text-white">{t('auth.title')}</h1>
