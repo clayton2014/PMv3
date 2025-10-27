@@ -13,8 +13,14 @@ export interface Service {
     quantity: number
     cost: number
   }
+  otherCosts?: Array<{
+    description: string
+    value: number
+  }>
   totalCost: number
   salePrice: number
+  profit: number
+  margin: number
   date: string
 }
 
@@ -52,4 +58,8 @@ export interface ServiceFormData {
   ink: string
   inkQuantity: number
   salePrice: number
+  otherCosts?: Array<{
+    description: string
+    value: number
+  }>
 }

@@ -1,381 +1,418 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Service, Material, Ink } from '@/lib/types';
-import { saveService, getMaterials, getInks } from '@/lib/storage';
-import { Save, Calculator, Package, Droplets, Plus } from 'lucide-react';
+import { getMaterials, getInks, saveService } from '@/lib/supabase-storage';
+import { Material, Ink, ServiceFormData } from '@/lib/types';
+import { Calculator, Plus, Trash2, Save } from 'lucide-react';
 
 export default function ServiceForm() {
   const [materials, setMaterials] = useState<Material[]>([]);
   const [inks, setInks] = useState<Ink[]>([]);
-  const [form, setForm] = useState({
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  const [formData, setFormData] = useState<ServiceFormData>({
     name: '',
-    materialId: '',
+    material: '',
     materialQuantity: 0,
-    inkId: '',
+    ink: '',
     inkQuantity: 0,
     salePrice: 0,
-    otherCosts: {
-      description: '',
-      value: 0,
-    },
+    otherCosts: []
   });
-  const [calculatedCost, setCalculatedCost] = useState(0);
+
+  const [calculations, setCalculations] = useState({
+    materialCost: 0,
+    inkCost: 0,
+    otherCostsTotal: 0,
+    totalCost: 0,
+    profit: 0,
+    margin: 0
+  });
 
   useEffect(() => {
-    setMaterials(getMaterials());
-    setInks(getInks());
+    loadData();
   }, []);
 
   useEffect(() => {
-    calculateCost();
-  }, [form.materialId, form.materialQuantity, form.inkId, form.inkQuantity, form.otherCosts.value, materials, inks]);
+    calculateCosts();
+  }, [formData, materials, inks]);
 
-  const calculateCost = () => {
-    let totalCost = 0;
-
-    // Material cost
-    if (form.materialId && form.materialQuantity > 0) {
-      const material = materials.find(m => m.id === form.materialId);
-      if (material && material.costPerSquareMeter) {
-        totalCost += material.costPerSquareMeter * form.materialQuantity;
-      }
-    }
-
-    // Ink cost
-    if (form.inkId && form.inkQuantity > 0) {
-      const ink = inks.find(i => i.id === form.inkId);
-      if (ink && ink.costPerMl) {
-        totalCost += ink.costPerMl * form.inkQuantity;
-      }
-    }
-
-    // Other costs
-    if (form.otherCosts.value > 0) {
-      totalCost += form.otherCosts.value;
-    }
-
-    setCalculatedCost(totalCost);
-  };
-
-  const handleNumberInputFocus = (field: string) => {
-    if (field === 'materialQuantity' && form.materialQuantity === 0) {
-      setForm({ ...form, materialQuantity: 0 });
-    } else if (field === 'inkQuantity' && form.inkQuantity === 0) {
-      setForm({ ...form, inkQuantity: 0 });
-    } else if (field === 'salePrice' && form.salePrice === 0) {
-      setForm({ ...form, salePrice: 0 });
-    } else if (field === 'otherCostsValue' && form.otherCosts.value === 0) {
-      setForm({ ...form, otherCosts: { ...form.otherCosts, value: 0 } });
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [materialsData, inksData] = await Promise.all([
+        getMaterials(),
+        getInks()
+      ]);
+      setMaterials(materialsData);
+      setInks(inksData);
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleNumberInputChange = (field: string, value: string) => {
-    const numValue = value === '' ? 0 : parseFloat(value);
+  const calculateCosts = () => {
+    const selectedMaterial = materials.find(m => m.id === formData.material);
+    const selectedInk = inks.find(i => i.id === formData.ink);
     
-    if (field === 'materialQuantity') {
-      setForm({ ...form, materialQuantity: isNaN(numValue) ? 0 : numValue });
-    } else if (field === 'inkQuantity') {
-      setForm({ ...form, inkQuantity: isNaN(numValue) ? 0 : numValue });
-    } else if (field === 'salePrice') {
-      setForm({ ...form, salePrice: isNaN(numValue) ? 0 : numValue });
-    } else if (field === 'otherCostsValue') {
-      setForm({ ...form, otherCosts: { ...form.otherCosts, value: isNaN(numValue) ? 0 : numValue } });
+    const materialCost = selectedMaterial 
+      ? (selectedMaterial.costPerSquareMeter || 0) * formData.materialQuantity 
+      : 0;
+    
+    const inkCost = selectedInk 
+      ? selectedInk.costPerMl * formData.inkQuantity 
+      : 0;
+
+    const otherCostsTotal = (formData.otherCosts || []).reduce((sum, cost) => sum + (cost.value || 0), 0);
+    
+    const totalCost = materialCost + inkCost + otherCostsTotal;
+    const profit = formData.salePrice - totalCost;
+    const margin = formData.salePrice > 0 ? (profit / formData.salePrice) * 100 : 0;
+
+    setCalculations({
+      materialCost,
+      inkCost,
+      otherCostsTotal,
+      totalCost,
+      profit,
+      margin
+    });
+  };
+
+  const handleInputChange = (field: keyof ServiceFormData, value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleQuantityFocus = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.target.value === '0') {
+      e.target.select();
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const addOtherCost = () => {
+    const newOtherCosts = [...(formData.otherCosts || []), { description: '', value: 0 }];
+    handleInputChange('otherCosts', newOtherCosts);
+  };
+
+  const updateOtherCost = (index: number, field: 'description' | 'value', value: string | number) => {
+    const newOtherCosts = [...(formData.otherCosts || [])];
+    newOtherCosts[index] = { ...newOtherCosts[index], [field]: value };
+    handleInputChange('otherCosts', newOtherCosts);
+  };
+
+  const removeOtherCost = (index: number) => {
+    const newOtherCosts = (formData.otherCosts || []).filter((_, i) => i !== index);
+    handleInputChange('otherCosts', newOtherCosts);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const selectedMaterial = materials.find(m => m.id === form.materialId);
-    const selectedInk = inks.find(i => i.id === form.inkId);
-    
-    if (!selectedMaterial || !selectedInk) {
-      alert('Selecione um material e uma tinta');
+    if (!formData.name || !formData.material || !formData.ink) {
+      alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
 
-    const materialCost = (selectedMaterial.costPerSquareMeter || 0) * form.materialQuantity;
-    const inkCost = (selectedInk.costPerMl || 0) * form.inkQuantity;
-
-    const service: Service = {
-      id: Date.now().toString(),
-      name: form.name,
-      material: {
-        id: selectedMaterial.id,
-        name: selectedMaterial.name,
-        quantity: form.materialQuantity,
-        cost: materialCost,
-      },
-      ink: {
-        id: selectedInk.id,
-        name: selectedInk.name,
-        quantity: form.inkQuantity,
-        cost: inkCost,
-      },
-      totalCost: calculatedCost,
-      salePrice: form.salePrice,
-      date: new Date().toLocaleDateString('pt-BR'),
-    };
-
-    saveService(service);
+    setSaving(true);
     
-    // Reset form
-    setForm({
-      name: '',
-      materialId: '',
-      materialQuantity: 0,
-      inkId: '',
-      inkQuantity: 0,
-      salePrice: 0,
-      otherCosts: {
-        description: '',
-        value: 0,
-      },
-    });
+    try {
+      const selectedMaterial = materials.find(m => m.id === formData.material);
+      const selectedInk = inks.find(i => i.id === formData.ink);
 
-    alert('Serviço salvo com sucesso!');
+      const service = {
+        name: formData.name,
+        material: {
+          id: formData.material,
+          name: selectedMaterial?.name || '',
+          quantity: formData.materialQuantity,
+          cost: calculations.materialCost
+        },
+        ink: {
+          id: formData.ink,
+          name: selectedInk?.name || '',
+          quantity: formData.inkQuantity,
+          cost: calculations.inkCost
+        },
+        otherCosts: formData.otherCosts || [],
+        totalCost: calculations.totalCost,
+        salePrice: formData.salePrice,
+        profit: calculations.profit,
+        margin: calculations.margin
+      };
+
+      const result = await saveService(service);
+      
+      if (result.success) {
+        alert('Serviço salvo com sucesso!');
+        // Reset form
+        setFormData({
+          name: '',
+          material: '',
+          materialQuantity: 0,
+          ink: '',
+          inkQuantity: 0,
+          salePrice: 0,
+          otherCosts: []
+        });
+      } else {
+        alert('Erro ao salvar serviço: ' + result.error);
+      }
+    } catch (error) {
+      console.error('Erro ao salvar serviço:', error);
+      alert('Erro ao salvar serviço');
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const profit = form.salePrice - calculatedCost;
-  const profitMargin = form.salePrice > 0 ? (profit / form.salePrice) * 100 : 0;
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="text-white text-xl">Carregando...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Novo Serviço</h2>
-        <div className="text-purple-200 text-sm">
-          Adicione um novo serviço de impressão
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-white mb-2">Novo Serviço</h2>
+          <p className="text-purple-200">Calcule custos e margem de lucro</p>
         </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Service Name */}
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <h3 className="text-lg font-semibold text-white mb-4">Informações do Serviço</h3>
-          <div>
-            <label className="block text-sm font-medium text-purple-200 mb-2">
-              Nome do Serviço
-            </label>
-            <input
-              type="text"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-              placeholder="Ex: Banner 3x2m"
-              required
-            />
-          </div>
-        </div>
-
-        {/* Material Selection */}
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <div className="flex items-center space-x-2 mb-4">
-            <Package className="w-5 h-5 text-purple-400" />
-            <h3 className="text-lg font-semibold text-white">Material</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Left Column - Form */}
+          <div className="space-y-6">
+            {/* Nome do Serviço */}
             <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Tipo de Material
+              <label className="block text-purple-200 text-sm font-medium mb-2">
+                Nome do Serviço *
+              </label>
+              <input
+                type="text"
+                value={formData.name}
+                onChange={(e) => handleInputChange('name', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="Ex: Banner 2x1m"
+                required
+              />
+            </div>
+
+            {/* Material */}
+            <div>
+              <label className="block text-purple-200 text-sm font-medium mb-2">
+                Material *
               </label>
               <select
-                value={form.materialId}
-                onChange={(e) => setForm({ ...form, materialId: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                value={formData.material}
+                onChange={(e) => handleInputChange('material', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 required
               >
-                <option value="" className="bg-purple-900 text-white">Selecione um material</option>
+                <option value="">Selecione um material</option>
                 {materials.map((material) => (
-                  <option key={material.id} value={material.id} className="bg-purple-900 text-white">
+                  <option key={material.id} value={material.id}>
                     {material.name} - R$ {(material.costPerSquareMeter || 0).toFixed(2)}/m²
                   </option>
                 ))}
               </select>
             </div>
+
+            {/* Quantidade de Material */}
             <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Quantidade (m²)
+              <label className="block text-purple-200 text-sm font-medium mb-2">
+                Quantidade (m²) *
               </label>
               <input
                 type="number"
                 step="0.01"
-                value={form.materialQuantity === 0 ? '' : form.materialQuantity}
-                onFocus={() => handleNumberInputFocus('materialQuantity')}
-                onChange={(e) => handleNumberInputChange('materialQuantity', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                placeholder="0.00"
+                value={formData.materialQuantity}
+                onChange={(e) => handleInputChange('materialQuantity', parseFloat(e.target.value) || 0)}
+                onFocus={handleQuantityFocus}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="0"
                 required
               />
             </div>
-          </div>
-          {form.materialId && form.materialQuantity > 0 && (
-            <div className="mt-4 p-3 bg-purple-500/20 rounded-lg border border-purple-400/30">
-              <p className="text-purple-200 text-sm">
-                Custo do material: <span className="text-white font-medium">
-                  R$ {((materials.find(m => m.id === form.materialId)?.costPerSquareMeter || 0) * form.materialQuantity).toFixed(2)}
-                </span>
-              </p>
-            </div>
-          )}
-        </div>
 
-        {/* Ink Selection */}
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <div className="flex items-center space-x-2 mb-4">
-            <Droplets className="w-5 h-5 text-purple-400" />
-            <h3 className="text-lg font-semibold text-white">Tinta</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Tinta */}
             <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Tipo de Tinta
+              <label className="block text-purple-200 text-sm font-medium mb-2">
+                Tinta *
               </label>
               <select
-                value={form.inkId}
-                onChange={(e) => setForm({ ...form, inkId: e.target.value })}
-                className="w-full px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+                value={formData.ink}
+                onChange={(e) => handleInputChange('ink', e.target.value)}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 required
               >
-                <option value="" className="bg-purple-900 text-white">Selecione uma tinta</option>
+                <option value="">Selecione uma tinta</option>
                 {inks.map((ink) => (
-                  <option key={ink.id} value={ink.id} className="bg-purple-900 text-white">
-                    {ink.name} - R$ {(ink.costPerMl || 0).toFixed(3)}/ml
+                  <option key={ink.id} value={ink.id}>
+                    {ink.name} - R$ {ink.costPerMl.toFixed(4)}/ml
                   </option>
                 ))}
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Quantidade (ml)
-              </label>
-              <input
-                type="number"
-                step="0.1"
-                value={form.inkQuantity === 0 ? '' : form.inkQuantity}
-                onFocus={() => handleNumberInputFocus('inkQuantity')}
-                onChange={(e) => handleNumberInputChange('inkQuantity', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                placeholder="0.0"
-                required
-              />
-            </div>
-          </div>
-          {form.inkId && form.inkQuantity > 0 && (
-            <div className="mt-4 p-3 bg-purple-500/20 rounded-lg border border-purple-400/30">
-              <p className="text-purple-200 text-sm">
-                Custo da tinta: <span className="text-white font-medium">
-                  R$ {((inks.find(i => i.id === form.inkId)?.costPerMl || 0) * form.inkQuantity).toFixed(2)}
-                </span>
-              </p>
-            </div>
-          )}
-        </div>
 
-        {/* Other Costs */}
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <div className="flex items-center space-x-2 mb-4">
-            <Plus className="w-5 h-5 text-purple-400" />
-            <h3 className="text-lg font-semibold text-white">Outros Custos</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Quantidade de Tinta */}
             <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Descrição
-              </label>
-              <input
-                type="text"
-                value={form.otherCosts.description}
-                onChange={(e) => setForm({ 
-                  ...form, 
-                  otherCosts: { ...form.otherCosts, description: e.target.value }
-                })}
-                className="w-full px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                placeholder="Ex: Acabamento, Entrega, etc."
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Valor (R$)
+              <label className="block text-purple-200 text-sm font-medium mb-2">
+                Quantidade (ml) *
               </label>
               <input
                 type="number"
                 step="0.01"
-                value={form.otherCosts.value === 0 ? '' : form.otherCosts.value}
-                onFocus={() => handleNumberInputFocus('otherCostsValue')}
-                onChange={(e) => handleNumberInputChange('otherCostsValue', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                placeholder="0.00"
+                value={formData.inkQuantity}
+                onChange={(e) => handleInputChange('inkQuantity', parseFloat(e.target.value) || 0)}
+                onFocus={handleQuantityFocus}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="0"
+                required
               />
             </div>
-          </div>
-          {form.otherCosts.value > 0 && (
-            <div className="mt-4 p-3 bg-purple-500/20 rounded-lg border border-purple-400/30">
-              <p className="text-purple-200 text-sm">
-                {form.otherCosts.description && (
-                  <>
-                    <span className="text-white font-medium">{form.otherCosts.description}:</span>{' '}
-                  </>
-                )}
-                <span className="text-white font-medium">
-                  R$ {form.otherCosts.value.toFixed(2)}
-                </span>
-              </p>
-            </div>
-          )}
-        </div>
 
-        {/* Pricing */}
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <div className="flex items-center space-x-2 mb-4">
-            <Calculator className="w-5 h-5 text-purple-400" />
-            <h3 className="text-lg font-semibold text-white">Precificação</h3>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Outros Custos */}
             <div>
-              <label className="block text-sm font-medium text-purple-200 mb-2">
-                Preço de Venda (R$)
+              <div className="flex items-center justify-between mb-3">
+                <label className="block text-purple-200 text-sm font-medium">
+                  Outros Custos
+                </label>
+                <button
+                  type="button"
+                  onClick={addOtherCost}
+                  className="flex items-center space-x-1 px-3 py-1 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors text-sm"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Adicionar</span>
+                </button>
+              </div>
+              
+              {(formData.otherCosts || []).map((cost, index) => (
+                <div key={index} className="flex space-x-2 mb-2">
+                  <input
+                    type="text"
+                    value={cost.description}
+                    onChange={(e) => updateOtherCost(index, 'description', e.target.value)}
+                    className="flex-1 px-3 py-2 bg-gray-700/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="Descrição"
+                  />
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={cost.value}
+                    onChange={(e) => updateOtherCost(index, 'value', parseFloat(e.target.value) || 0)}
+                    className="w-24 px-3 py-2 bg-gray-700/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
+                    placeholder="0,00"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeOtherCost(index)}
+                    className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg transition-all"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Preço de Venda */}
+            <div>
+              <label className="block text-purple-200 text-sm font-medium mb-2">
+                Preço de Venda (R$) *
               </label>
               <input
                 type="number"
                 step="0.01"
-                value={form.salePrice === 0 ? '' : form.salePrice}
-                onFocus={() => handleNumberInputFocus('salePrice')}
-                onChange={(e) => handleNumberInputChange('salePrice', e.target.value)}
-                className="w-full px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                placeholder="0.00"
+                value={formData.salePrice}
+                onChange={(e) => handleInputChange('salePrice', parseFloat(e.target.value) || 0)}
+                onFocus={handleQuantityFocus}
+                className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                placeholder="0,00"
                 required
               />
             </div>
-            <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-purple-500/20 rounded-lg border border-purple-400/30">
-                <span className="text-purple-200 text-sm">Custo Total:</span>
-                <span className="text-white font-medium">R$ {calculatedCost.toFixed(2)}</span>
+          </div>
+
+          {/* Right Column - Calculations */}
+          <div className="bg-gray-700/30 rounded-2xl p-6 border border-purple-500/30">
+            <div className="flex items-center space-x-2 mb-6">
+              <Calculator className="w-6 h-6 text-purple-400" />
+              <h3 className="text-xl font-semibold text-white">Cálculos</h3>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex justify-between items-center py-2 border-b border-purple-500/20">
+                <span className="text-purple-200">Custo do Material:</span>
+                <span className="text-white font-medium">R$ {calculations.materialCost.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-purple-500/20 rounded-lg border border-purple-400/30">
-                <span className="text-purple-200 text-sm">Lucro:</span>
-                <span className={`font-medium ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  R$ {profit.toFixed(2)}
-                </span>
+
+              <div className="flex justify-between items-center py-2 border-b border-purple-500/20">
+                <span className="text-purple-200">Custo da Tinta:</span>
+                <span className="text-white font-medium">R$ {calculations.inkCost.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center p-3 bg-purple-500/20 rounded-lg border border-purple-400/30">
-                <span className="text-purple-200 text-sm">Margem:</span>
-                <span className={`font-medium ${profitMargin >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {profitMargin.toFixed(1)}%
-                </span>
+
+              {calculations.otherCostsTotal > 0 && (
+                <div className="flex justify-between items-center py-2 border-b border-purple-500/20">
+                  <span className="text-purple-200">Outros Custos:</span>
+                  <span className="text-white font-medium">R$ {calculations.otherCostsTotal.toFixed(2)}</span>
+                </div>
+              )}
+
+              <div className="flex justify-between items-center py-2 border-b border-purple-500/20 text-lg">
+                <span className="text-purple-200 font-medium">Custo Total:</span>
+                <span className="text-white font-bold">R$ {calculations.totalCost.toFixed(2)}</span>
+              </div>
+
+              <div className="flex justify-between items-center py-2 border-b border-purple-500/20 text-lg">
+                <span className="text-purple-200 font-medium">Preço de Venda:</span>
+                <span className="text-white font-bold">R$ {formData.salePrice.toFixed(2)}</span>
+              </div>
+
+              <div className={`flex justify-between items-center py-2 border-b border-purple-500/20 text-lg ${
+                calculations.profit >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}>
+                <span className="font-medium">Lucro:</span>
+                <span className="font-bold">R$ {calculations.profit.toFixed(2)}</span>
+              </div>
+
+              <div className={`flex justify-between items-center py-2 text-xl ${
+                calculations.margin >= 0 ? 'text-green-400' : 'text-red-400'
+              }`}>
+                <span className="font-medium">Margem:</span>
+                <span className="font-bold">{calculations.margin.toFixed(1)}%</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Submit Button */}
-        <div className="flex justify-end">
+        <div className="flex justify-end pt-6">
           <button
             type="submit"
-            className="flex items-center space-x-2 px-6 py-3 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors font-medium"
+            disabled={saving}
+            className="flex items-center space-x-2 px-8 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <Save className="w-5 h-5" />
-            <span>Salvar Serviço</span>
+            {saving ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                <span>Salvando...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                <span>Salvar Serviço</span>
+              </>
+            )}
           </button>
         </div>
       </form>

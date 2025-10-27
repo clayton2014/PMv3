@@ -6,6 +6,7 @@ import ServiceForm from '@/components/ServiceForm';
 import MaterialsManager from '@/components/MaterialsManager';
 import Reports from '@/components/Reports';
 import AuthSystem from '@/components/AuthSystem';
+import { getCurrentUser, signOut } from '@/lib/supabase-storage';
 import { BarChart3, Plus, Package, FileText, LogOut, User } from 'lucide-react';
 
 interface User {
@@ -13,7 +14,6 @@ interface User {
   name: string;
   email: string;
   phone: string;
-  password: string;
 }
 
 export default function Home() {
@@ -23,22 +23,32 @@ export default function Home() {
 
   // Verificar se há usuário logado ao carregar a página
   useEffect(() => {
-    const savedUser = localStorage.getItem('currentUser');
-    if (savedUser) {
-      setCurrentUser(JSON.parse(savedUser));
-    }
-    setIsLoading(false);
+    checkUser();
   }, []);
+
+  const checkUser = async () => {
+    try {
+      const user = await getCurrentUser();
+      setCurrentUser(user);
+    } catch (error) {
+      console.error('Erro ao verificar usuário:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
-    localStorage.setItem('currentUser', JSON.stringify(user));
   };
 
-  const handleLogout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem('currentUser');
-    setActiveTab('dashboard');
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      setCurrentUser(null);
+      setActiveTab('dashboard');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   // Mostrar loading enquanto verifica autenticação

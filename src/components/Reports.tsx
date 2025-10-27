@@ -1,296 +1,385 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getServices } from '@/lib/supabase-storage';
 import { Service } from '@/lib/types';
-import { getServices } from '@/lib/storage';
-import { BarChart3, TrendingUp, DollarSign, Calendar, Download } from 'lucide-react';
+import { FileText, Download, Calendar, Filter, TrendingUp, DollarSign } from 'lucide-react';
 
 export default function Reports() {
   const [services, setServices] = useState<Service[]>([]);
-  const [dateRange, setDateRange] = useState('all');
+  const [loading, setLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState('all');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
 
   useEffect(() => {
-    setServices(getServices());
+    loadServices();
   }, []);
 
-  const filteredServices = services.filter(service => {
-    if (dateRange === 'all') return true;
-    
-    const serviceDate = new Date(service.date);
-    const now = new Date();
-    
-    switch (dateRange) {
-      case 'week':
-        const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        return serviceDate >= weekAgo;
-      case 'month':
-        const monthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-        return serviceDate >= monthAgo;
-      case 'year':
-        const yearAgo = new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000);
-        return serviceDate >= yearAgo;
-      default:
-        return true;
+  const loadServices = async () => {
+    setLoading(true);
+    try {
+      const servicesData = await getServices();
+      setServices(servicesData);
+    } catch (error) {
+      console.error('Erro ao carregar serviços:', error);
+    } finally {
+      setLoading(false);
     }
-  });
-
-  const totalRevenue = filteredServices.reduce((sum, service) => sum + service.salePrice, 0);
-  const totalCost = filteredServices.reduce((sum, service) => sum + service.totalCost, 0);
-  const totalProfit = totalRevenue - totalCost;
-  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-
-  // Group services by material for chart data
-  const materialStats = filteredServices.reduce((acc, service) => {
-    const materialName = service.material.name;
-    if (!acc[materialName]) {
-      acc[materialName] = {
-        count: 0,
-        revenue: 0,
-        cost: 0,
-        profit: 0,
-      };
-    }
-    acc[materialName].count++;
-    acc[materialName].revenue += service.salePrice;
-    acc[materialName].cost += service.totalCost;
-    acc[materialName].profit += service.salePrice - service.totalCost;
-    return acc;
-  }, {} as Record<string, { count: number; revenue: number; cost: number; profit: number }>);
-
-  const exportData = () => {
-    const csvContent = [
-      ['Serviço', 'Data', 'Material', 'Quantidade (m²)', 'Custo Total', 'Preço de Venda', 'Lucro'],
-      ...filteredServices.map(service => [
-        service.name,
-        service.date,
-        service.material.name,
-        service.material.quantity.toString(),
-        service.totalCost.toFixed(2),
-        service.salePrice.toFixed(2),
-        (service.salePrice - service.totalCost).toFixed(2),
-      ])
-    ].map(row => row.join(',')).join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `relatorio-impressoes-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    window.URL.revokeObjectURL(url);
   };
 
+  const getFilteredServices = () => {
+    let filtered = [...services];
+    
+    if (dateFilter === 'custom' && startDate && endDate) {
+      const start = new Date(startDate);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999); // Include the entire end date
+      
+      filtered = filtered.filter(service => {
+        const serviceDate = new Date(service.date);
+        return serviceDate >= start && serviceDate <= end;
+      });
+    } else if (dateFilter !== 'all') {
+      const now = new Date();
+      const filterDate = new Date();
+      
+      switch (dateFilter) {
+        case 'week':
+          filterDate.setDate(now.getDate() - 7);
+          break;
+        case 'month':
+          filterDate.setMonth(now.getMonth() - 1);
+          break;
+        case 'quarter':
+          filterDate.setMonth(now.getMonth() - 3);
+          break;
+        case 'year':
+          filterDate.setFullYear(now.getFullYear() - 1);
+          break;
+      }
+      
+      filtered = filtered.filter(service => new Date(service.date) >= filterDate);
+    }
+    
+    return filtered.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  };
+
+  const filteredServices = getFilteredServices();
+
+  const generateReport = () => {
+    const totalServices = filteredServices.length;
+    const totalRevenue = filteredServices.reduce((sum, service) => sum + service.salePrice, 0);
+    const totalCosts = filteredServices.reduce((sum, service) => sum + service.totalCost, 0);
+    const totalProfit = filteredServices.reduce((sum, service) => sum + service.profit, 0);
+    const averageMargin = totalServices > 0 
+      ? filteredServices.reduce((sum, service) => sum + service.margin, 0) / totalServices 
+      : 0;
+
+    // Group by material
+    const materialStats = filteredServices.reduce((acc, service) => {
+      const materialName = service.material.name;
+      if (!acc[materialName]) {
+        acc[materialName] = { count: 0, revenue: 0, quantity: 0 };
+      }
+      acc[materialName].count++;
+      acc[materialName].revenue += service.salePrice;
+      acc[materialName].quantity += service.material.quantity;
+      return acc;
+    }, {} as Record<string, { count: number; revenue: number; quantity: number }>);
+
+    // Group by ink
+    const inkStats = filteredServices.reduce((acc, service) => {
+      const inkName = service.ink.name;
+      if (!acc[inkName]) {
+        acc[inkName] = { count: 0, revenue: 0, quantity: 0 };
+      }
+      acc[inkName].count++;
+      acc[inkName].revenue += service.salePrice;
+      acc[inkName].quantity += service.ink.quantity;
+      return acc;
+    }, {} as Record<string, { count: number; revenue: number; quantity: number }>);
+
+    return {
+      totalServices,
+      totalRevenue,
+      totalCosts,
+      totalProfit,
+      averageMargin,
+      materialStats,
+      inkStats
+    };
+  };
+
+  const exportToCSV = () => {
+    const headers = [
+      'Data',
+      'Serviço',
+      'Material',
+      'Qtd Material (m²)',
+      'Tinta',
+      'Qtd Tinta (ml)',
+      'Custo Total',
+      'Preço Venda',
+      'Lucro',
+      'Margem (%)'
+    ];
+
+    const csvContent = [
+      headers.join(','),
+      ...filteredServices.map(service => [
+        new Date(service.date).toLocaleDateString('pt-BR'),
+        `"${service.name}"`,
+        `"${service.material.name}"`,
+        service.material.quantity,
+        `"${service.ink.name}"`,
+        service.ink.quantity,
+        service.totalCost.toFixed(2),
+        service.salePrice.toFixed(2),
+        service.profit.toFixed(2),
+        service.margin.toFixed(2)
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio-servicos-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const report = generateReport();
+
+  if (loading) {
+    return (
+      <div className="p-8 text-center">
+        <div className="text-white text-xl">Carregando...</div>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Relatórios</h2>
-        <div className="flex items-center space-x-4">
-          <select
-            value={dateRange}
-            onChange={(e) => setDateRange(e.target.value)}
-            className="px-3 py-2 bg-gray-800/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
-          >
-            <option value="all" className="bg-purple-900 text-white">Todos os períodos</option>
-            <option value="week" className="bg-purple-900 text-white">Última semana</option>
-            <option value="month" className="bg-purple-900 text-white">Último mês</option>
-            <option value="year" className="bg-purple-900 text-white">Último ano</option>
-          </select>
-          <button
-            onClick={exportData}
-            className="flex items-center space-x-2 px-4 py-2 bg-purple-500/30 text-white rounded-lg hover:bg-purple-500/40 transition-colors border border-purple-400/50"
-          >
-            <Download className="w-4 h-4" />
-            <span>Exportar CSV</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-200 text-sm font-medium">Receita Total</p>
-              <p className="text-2xl font-bold text-white">
-                R$ {totalRevenue.toFixed(2)}
-              </p>
-            </div>
-            <DollarSign className="w-8 h-8 text-green-400" />
-          </div>
-        </div>
-
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-200 text-sm font-medium">Custo Total</p>
-              <p className="text-2xl font-bold text-white">
-                R$ {totalCost.toFixed(2)}
-              </p>
-            </div>
-            <BarChart3 className="w-8 h-8 text-red-400" />
-          </div>
-        </div>
-
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-200 text-sm font-medium">Lucro Total</p>
-              <p className="text-2xl font-bold text-white">
-                R$ {totalProfit.toFixed(2)}
-              </p>
-            </div>
-            <TrendingUp className="w-8 h-8 text-purple-400" />
-          </div>
-        </div>
-
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-xl p-6 border border-purple-500/30">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-purple-200 text-sm font-medium">Margem de Lucro</p>
-              <p className="text-2xl font-bold text-white">
-                {profitMargin.toFixed(1)}%
-              </p>
-            </div>
-            <Calendar className="w-8 h-8 text-yellow-400" />
-          </div>
-        </div>
-      </div>
-
-      {/* Material Performance */}
-      <div className="backdrop-blur-md bg-gray-800/50 rounded-xl border border-purple-500/30 overflow-hidden">
-        <div className="px-6 py-4 border-b border-purple-500/30">
-          <h3 className="text-lg font-semibold text-white">Performance por Material</h3>
+    <div className="p-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h2 className="text-3xl font-bold text-white mb-2">Relatórios</h2>
+          <p className="text-purple-200">Análise detalhada dos seus serviços</p>
         </div>
         
-        {Object.keys(materialStats).length === 0 ? (
-          <div className="p-8 text-center">
-            <BarChart3 className="w-12 h-12 text-purple-300 mx-auto mb-4" />
-            <p className="text-purple-200 text-lg">Nenhum dado disponível</p>
-            <p className="text-purple-300 text-sm mt-2">
-              Adicione serviços para ver os relatórios
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-purple-500/20">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Material
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Serviços
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Receita
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Custo
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Lucro
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Margem
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-purple-500/20">
-                {Object.entries(materialStats).map(([material, stats]) => (
-                  <tr key={material} className="hover:bg-purple-500/10 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                      {material}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {stats.count}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      R$ {stats.revenue.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      R$ {stats.cost.toFixed(2)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${
-                        stats.profit > 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        R$ {stats.profit.toFixed(2)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${
-                        stats.profit > 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {stats.revenue > 0 ? ((stats.profit / stats.revenue) * 100).toFixed(1) : 0}%
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+        <button
+          onClick={exportToCSV}
+          className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+        >
+          <Download className="w-4 h-4" />
+          <span>Exportar CSV</span>
+        </button>
       </div>
 
-      {/* Recent Services */}
-      <div className="backdrop-blur-md bg-gray-800/50 rounded-xl border border-purple-500/30 overflow-hidden">
-        <div className="px-6 py-4 border-b border-purple-500/30">
-          <h3 className="text-lg font-semibold text-white">Serviços do Período</h3>
+      {/* Filters */}
+      <div className="bg-gray-700/30 rounded-2xl p-6 border border-purple-500/30 mb-8">
+        <div className="flex items-center space-x-2 mb-4">
+          <Filter className="w-5 h-5 text-purple-400" />
+          <h3 className="text-lg font-semibold text-white">Filtros</h3>
         </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <label className="block text-purple-200 text-sm font-medium mb-2">Período</label>
+            <select
+              value={dateFilter}
+              onChange={(e) => setDateFilter(e.target.value)}
+              className="w-full px-3 py-2 bg-gray-700/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+            >
+              <option value="all">Todos os períodos</option>
+              <option value="week">Última semana</option>
+              <option value="month">Último mês</option>
+              <option value="quarter">Último trimestre</option>
+              <option value="year">Último ano</option>
+              <option value="custom">Período personalizado</option>
+            </select>
+          </div>
+          
+          {dateFilter === 'custom' && (
+            <>
+              <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">Data Inicial</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-purple-200 text-sm font-medium mb-2">Data Final</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className="w-full px-3 py-2 bg-gray-700/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-2xl p-6 border border-blue-500/30">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-blue-500/20 rounded-xl">
+              <FileText className="w-6 h-6 text-blue-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{report.totalServices}</div>
+          <div className="text-blue-300 text-sm">Total de Serviços</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-2xl p-6 border border-green-500/30">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-green-500/20 rounded-xl">
+              <DollarSign className="w-6 h-6 text-green-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">R$ {report.totalRevenue.toFixed(2)}</div>
+          <div className="text-green-300 text-sm">Receita Total</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-2xl p-6 border border-purple-500/30">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-purple-500/20 rounded-xl">
+              <TrendingUp className="w-6 h-6 text-purple-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">R$ {report.totalProfit.toFixed(2)}</div>
+          <div className="text-purple-300 text-sm">Lucro Total</div>
+        </div>
+
+        <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-2xl p-6 border border-orange-500/30">
+          <div className="flex items-center justify-between mb-4">
+            <div className="p-3 bg-orange-500/20 rounded-xl">
+              <Calendar className="w-6 h-6 text-orange-400" />
+            </div>
+          </div>
+          <div className="text-2xl font-bold text-white mb-1">{report.averageMargin.toFixed(1)}%</div>
+          <div className="text-orange-300 text-sm">Margem Média</div>
+        </div>
+      </div>
+
+      {/* Detailed Tables */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        {/* Materials Stats */}
+        <div className="bg-gray-700/30 rounded-2xl p-6 border border-purple-500/30">
+          <h3 className="text-lg font-semibold text-white mb-4">Materiais Mais Utilizados</h3>
+          <div className="space-y-3">
+            {Object.entries(report.materialStats)
+              .sort(([,a], [,b]) => b.count - a.count)
+              .slice(0, 5)
+              .map(([material, stats]) => (
+                <div key={material} className="flex justify-between items-center py-2 border-b border-purple-500/20">
+                  <div>
+                    <div className="text-white font-medium">{material}</div>
+                    <div className="text-purple-300 text-sm">{stats.quantity.toFixed(2)}m² total</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white font-medium">{stats.count} serviços</div>
+                    <div className="text-green-400 text-sm">R$ {stats.revenue.toFixed(2)}</div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+
+        {/* Inks Stats */}
+        <div className="bg-gray-700/30 rounded-2xl p-6 border border-purple-500/30">
+          <h3 className="text-lg font-semibold text-white mb-4">Tintas Mais Utilizadas</h3>
+          <div className="space-y-3">
+            {Object.entries(report.inkStats)
+              .sort(([,a], [,b]) => b.count - a.count)
+              .slice(0, 5)
+              .map(([ink, stats]) => (
+                <div key={ink} className="flex justify-between items-center py-2 border-b border-purple-500/20">
+                  <div>
+                    <div className="text-white font-medium">{ink}</div>
+                    <div className="text-purple-300 text-sm">{stats.quantity.toFixed(2)}ml total</div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-white font-medium">{stats.count} serviços</div>
+                    <div className="text-green-400 text-sm">R$ {stats.revenue.toFixed(2)}</div>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Services List */}
+      <div className="bg-gray-700/30 rounded-2xl p-6 border border-purple-500/30">
+        <h3 className="text-lg font-semibold text-white mb-4">Lista de Serviços</h3>
         
         {filteredServices.length === 0 ? (
-          <div className="p-8 text-center">
-            <Calendar className="w-12 h-12 text-purple-300 mx-auto mb-4" />
-            <p className="text-purple-200 text-lg">Nenhum serviço no período</p>
-            <p className="text-purple-300 text-sm mt-2">
-              Selecione um período diferente ou adicione novos serviços
-            </p>
+          <div className="text-center py-12">
+            <FileText className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" />
+            <p className="text-purple-200 text-lg mb-2">Nenhum serviço encontrado</p>
+            <p className="text-purple-300 text-sm">Ajuste os filtros ou crie novos serviços</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-purple-500/20">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Serviço
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Data
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Material
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Receita
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-purple-200 uppercase tracking-wider">
-                    Lucro
-                  </th>
+              <thead>
+                <tr className="border-b border-purple-500/20">
+                  <th className="text-left py-3 px-4 text-purple-200 font-medium">Data</th>
+                  <th className="text-left py-3 px-4 text-purple-200 font-medium">Serviço</th>
+                  <th className="text-left py-3 px-4 text-purple-200 font-medium">Material</th>
+                  <th className="text-left py-3 px-4 text-purple-200 font-medium">Tinta</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Custo</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Venda</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Lucro</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Margem</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-purple-500/20">
-                {filteredServices.slice(0, 10).map((service) => (
-                  <tr key={service.id} className="hover:bg-purple-500/10 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">
-                      {service.name}
+              <tbody>
+                {filteredServices.map((service) => (
+                  <tr key={service.id} className="border-b border-purple-500/10 hover:bg-purple-500/5 transition-colors">
+                    <td className="py-3 px-4 text-purple-200 text-sm">
+                      {new Date(service.date).toLocaleDateString('pt-BR')}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {service.date}
+                    <td className="py-3 px-4">
+                      <div className="text-white font-medium">{service.name}</div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
-                      {service.material.name}
+                    <td className="py-3 px-4">
+                      <div className="text-purple-200 text-sm">
+                        {service.material.name}
+                        <div className="text-purple-300 text-xs">{service.material.quantity}m²</div>
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">
+                    <td className="py-3 px-4">
+                      <div className="text-purple-200 text-sm">
+                        {service.ink.name}
+                        <div className="text-purple-300 text-xs">{service.ink.quantity}ml</div>
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-right text-white">
+                      R$ {service.totalCost.toFixed(2)}
+                    </td>
+                    <td className="py-3 px-4 text-right text-white">
                       R$ {service.salePrice.toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`text-sm font-medium ${
-                        service.salePrice - service.totalCost > 0 
-                          ? 'text-green-400' 
-                          : 'text-red-400'
-                      }`}>
-                        R$ {(service.salePrice - service.totalCost).toFixed(2)}
-                      </span>
+                    <td className={`py-3 px-4 text-right font-medium ${
+                      service.profit >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      R$ {service.profit.toFixed(2)}
+                    </td>
+                    <td className={`py-3 px-4 text-right font-medium ${
+                      service.margin >= 0 ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {service.margin.toFixed(1)}%
                     </td>
                   </tr>
                 ))}
