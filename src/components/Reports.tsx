@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getServices } from '@/lib/supabase-storage';
 import { Service } from '@/lib/types';
 import { FileText, Download, Calendar, Filter, TrendingUp, DollarSign } from 'lucide-react';
 
 export default function Reports() {
+  const { t } = useTranslation();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [dateFilter, setDateFilter] = useState('all');
@@ -157,7 +159,7 @@ export default function Reports() {
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-white text-xl">Carregando...</div>
+        <div className="text-white text-xl">{t('dashboard.loading')}</div>
       </div>
     );
   }
@@ -166,8 +168,8 @@ export default function Reports() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Relatórios</h2>
-          <p className="text-purple-200">Análise detalhada dos seus serviços</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{t('reports.title')}</h2>
+          <p className="text-purple-200">{t('reports.subtitle')}</p>
         </div>
         
         <button
@@ -175,7 +177,7 @@ export default function Reports() {
           className="flex items-center space-x-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
         >
           <Download className="w-4 h-4" />
-          <span>Exportar CSV</span>
+          <span>{t('reports.export')}</span>
         </button>
       </div>
 
@@ -188,7 +190,7 @@ export default function Reports() {
         
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-purple-200 text-sm font-medium mb-2">Período</label>
+            <label className="block text-purple-200 text-sm font-medium mb-2">{t('reports.period')}</label>
             <select
               value={dateFilter}
               onChange={(e) => setDateFilter(e.target.value)}
@@ -196,9 +198,9 @@ export default function Reports() {
             >
               <option value="all">Todos os períodos</option>
               <option value="week">Última semana</option>
-              <option value="month">Último mês</option>
-              <option value="quarter">Último trimestre</option>
-              <option value="year">Último ano</option>
+              <option value="month">{t('reports.lastMonth')}</option>
+              <option value="quarter">{t('reports.last3Months')}</option>
+              <option value="year">{t('reports.thisYear')}</option>
               <option value="custom">Período personalizado</option>
             </select>
           </div>
@@ -247,8 +249,8 @@ export default function Reports() {
               <DollarSign className="w-6 h-6 text-green-400" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white mb-1">R$ {report.totalRevenue.toFixed(2)}</div>
-          <div className="text-green-300 text-sm">Receita Total</div>
+          <div className="text-2xl font-bold text-white mb-1">$ {report.totalRevenue.toFixed(2)}</div>
+          <div className="text-green-300 text-sm">{t('reports.totalRevenue')}</div>
         </div>
 
         <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-2xl p-6 border border-purple-500/30">
@@ -257,8 +259,8 @@ export default function Reports() {
               <TrendingUp className="w-6 h-6 text-purple-400" />
             </div>
           </div>
-          <div className="text-2xl font-bold text-white mb-1">R$ {report.totalProfit.toFixed(2)}</div>
-          <div className="text-purple-300 text-sm">Lucro Total</div>
+          <div className="text-2xl font-bold text-white mb-1">$ {report.totalProfit.toFixed(2)}</div>
+          <div className="text-purple-300 text-sm">{t('reports.totalProfit')}</div>
         </div>
 
         <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-2xl p-6 border border-orange-500/30">
@@ -268,7 +270,7 @@ export default function Reports() {
             </div>
           </div>
           <div className="text-2xl font-bold text-white mb-1">{report.averageMargin.toFixed(1)}%</div>
-          <div className="text-orange-300 text-sm">Margem Média</div>
+          <div className="text-orange-300 text-sm">{t('reports.averageMargin')}</div>
         </div>
       </div>
 
@@ -276,7 +278,7 @@ export default function Reports() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
         {/* Materials Stats */}
         <div className="bg-gray-700/30 rounded-2xl p-6 border border-purple-500/30">
-          <h3 className="text-lg font-semibold text-white mb-4">Materiais Mais Utilizados</h3>
+          <h3 className="text-lg font-semibold text-white mb-4">{t('reports.topMaterials')}</h3>
           <div className="space-y-3">
             {Object.entries(report.materialStats)
               .sort(([,a], [,b]) => b.count - a.count)
@@ -289,7 +291,7 @@ export default function Reports() {
                   </div>
                   <div className="text-right">
                     <div className="text-white font-medium">{stats.count} serviços</div>
-                    <div className="text-green-400 text-sm">R$ {stats.revenue.toFixed(2)}</div>
+                    <div className="text-green-400 text-sm">$ {stats.revenue.toFixed(2)}</div>
                   </div>
                 </div>
               ))}
@@ -311,7 +313,7 @@ export default function Reports() {
                   </div>
                   <div className="text-right">
                     <div className="text-white font-medium">{stats.count} serviços</div>
-                    <div className="text-green-400 text-sm">R$ {stats.revenue.toFixed(2)}</div>
+                    <div className="text-green-400 text-sm">$ {stats.revenue.toFixed(2)}</div>
                   </div>
                 </div>
               ))}
@@ -366,15 +368,15 @@ export default function Reports() {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right text-white">
-                      R$ {service.totalCost.toFixed(2)}
+                      $ {service.totalCost.toFixed(2)}
                     </td>
                     <td className="py-3 px-4 text-right text-white">
-                      R$ {service.salePrice.toFixed(2)}
+                      $ {service.salePrice.toFixed(2)}
                     </td>
                     <td className={`py-3 px-4 text-right font-medium ${
                       service.profit >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      R$ {service.profit.toFixed(2)}
+                      $ {service.profit.toFixed(2)}
                     </td>
                     <td className={`py-3 px-4 text-right font-medium ${
                       service.margin >= 0 ? 'text-green-400' : 'text-red-400'

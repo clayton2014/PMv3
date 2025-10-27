@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getMaterials, getInks, saveService } from '@/lib/supabase-storage';
 import { Material, Ink, ServiceFormData } from '@/lib/types';
 import { Calculator, Plus, Trash2, Save } from 'lucide-react';
 
 export default function ServiceForm() {
+  const { t, i18n } = useTranslation();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [inks, setInks] = useState<Ink[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,6 +31,19 @@ export default function ServiceForm() {
     profit: 0,
     margin: 0
   });
+
+  // Função para formatar moeda sempre em dólar
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value);
+  };
+
+  // Função para obter símbolo da moeda sempre em dólar
+  const getCurrencySymbol = () => {
+    return '$';
+  };
 
   useEffect(() => {
     loadData();
@@ -115,7 +130,7 @@ export default function ServiceForm() {
     e.preventDefault();
     
     if (!formData.name || !formData.material || !formData.ink) {
-      alert('Por favor, preencha todos os campos obrigatórios');
+      alert(t('service.fillRequired'));
       return;
     }
 
@@ -149,7 +164,7 @@ export default function ServiceForm() {
       const result = await saveService(service);
       
       if (result.success) {
-        alert('Serviço salvo com sucesso!');
+        alert(t('service.success'));
         // Reset form
         setFormData({
           name: '',
@@ -161,11 +176,11 @@ export default function ServiceForm() {
           otherCosts: []
         });
       } else {
-        alert('Erro ao salvar serviço: ' + result.error);
+        alert(t('service.error') + ': ' + result.error);
       }
     } catch (error) {
       console.error('Erro ao salvar serviço:', error);
-      alert('Erro ao salvar serviço');
+      alert(t('service.error'));
     } finally {
       setSaving(false);
     }
@@ -174,17 +189,17 @@ export default function ServiceForm() {
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-white text-xl">Carregando...</div>
+        <div className="text-white text-xl">{t('dashboard.loading')}</div>
       </div>
     );
   }
 
   return (
-    <div className="p-8">
+    <div className="p-8" key={i18n.language}>
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Novo Serviço</h2>
-          <p className="text-purple-200">Calcule custos e margem de lucro</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{t('service.title')}</h2>
+          <p className="text-purple-200">{t('service.subtitle')}</p>
         </div>
       </div>
 
@@ -195,14 +210,14 @@ export default function ServiceForm() {
             {/* Nome do Serviço */}
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
-                Nome do Serviço *
+                {t('service.serviceName')} *
               </label>
               <input
                 type="text"
                 value={formData.name}
                 onChange={(e) => handleInputChange('name', e.target.value)}
                 className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                placeholder="Ex: Banner 2x1m"
+                placeholder={t('service.serviceNamePlaceholder')}
                 required
               />
             </div>
@@ -210,7 +225,7 @@ export default function ServiceForm() {
             {/* Material */}
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
-                Material *
+                {t('dashboard.material')} *
               </label>
               <select
                 value={formData.material}
@@ -218,10 +233,10 @@ export default function ServiceForm() {
                 className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 required
               >
-                <option value="">Selecione um material</option>
+                <option value="">{t('service.selectMaterial')}</option>
                 {materials.map((material) => (
                   <option key={material.id} value={material.id}>
-                    {material.name} - R$ {(material.costPerSquareMeter || 0).toFixed(2)}/m²
+                    {material.name} - {formatCurrency(material.costPerSquareMeter || 0)}/m²
                   </option>
                 ))}
               </select>
@@ -230,7 +245,7 @@ export default function ServiceForm() {
             {/* Quantidade de Material */}
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
-                Quantidade (m²) *
+                {t('service.quantity')} (m²) *
               </label>
               <input
                 type="number"
@@ -247,7 +262,7 @@ export default function ServiceForm() {
             {/* Tinta */}
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
-                Tinta *
+                {t('dashboard.ink')} *
               </label>
               <select
                 value={formData.ink}
@@ -255,10 +270,10 @@ export default function ServiceForm() {
                 className="w-full px-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 required
               >
-                <option value="">Selecione uma tinta</option>
+                <option value="">{t('service.selectInk')}</option>
                 {inks.map((ink) => (
                   <option key={ink.id} value={ink.id}>
-                    {ink.name} - R$ {ink.costPerMl.toFixed(4)}/ml
+                    {ink.name} - {formatCurrency(ink.costPerMl)}/ml
                   </option>
                 ))}
               </select>
@@ -267,7 +282,7 @@ export default function ServiceForm() {
             {/* Quantidade de Tinta */}
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
-                Quantidade (ml) *
+                {t('service.quantity')} (ml) *
               </label>
               <input
                 type="number"
@@ -285,7 +300,7 @@ export default function ServiceForm() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <label className="block text-purple-200 text-sm font-medium">
-                  Outros Custos
+                  {t('service.otherCosts')}
                 </label>
                 <button
                   type="button"
@@ -293,7 +308,7 @@ export default function ServiceForm() {
                   className="flex items-center space-x-1 px-3 py-1 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-colors text-sm"
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Adicionar</span>
+                  <span>{t('service.add')}</span>
                 </button>
               </div>
               
@@ -304,7 +319,7 @@ export default function ServiceForm() {
                     value={cost.description}
                     onChange={(e) => updateOtherCost(index, 'description', e.target.value)}
                     className="flex-1 px-3 py-2 bg-gray-700/50 border border-purple-500/30 rounded-lg text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 text-sm"
-                    placeholder="Descrição"
+                    placeholder={t('service.description')}
                   />
                   <input
                     type="number"
@@ -328,7 +343,7 @@ export default function ServiceForm() {
             {/* Preço de Venda */}
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
-                Preço de Venda (R$) *
+                {t('service.salePrice')} ({getCurrencySymbol()}) *
               </label>
               <input
                 type="number"
@@ -347,48 +362,48 @@ export default function ServiceForm() {
           <div className="bg-gray-700/30 rounded-2xl p-6 border border-purple-500/30">
             <div className="flex items-center space-x-2 mb-6">
               <Calculator className="w-6 h-6 text-purple-400" />
-              <h3 className="text-xl font-semibold text-white">Cálculos</h3>
+              <h3 className="text-xl font-semibold text-white">{t('service.calculations')}</h3>
             </div>
 
             <div className="space-y-4">
               <div className="flex justify-between items-center py-2 border-b border-purple-500/20">
-                <span className="text-purple-200">Custo do Material:</span>
-                <span className="text-white font-medium">R$ {calculations.materialCost.toFixed(2)}</span>
+                <span className="text-purple-200">{t('service.materialCost')}:</span>
+                <span className="text-white font-medium">{formatCurrency(calculations.materialCost)}</span>
               </div>
 
               <div className="flex justify-between items-center py-2 border-b border-purple-500/20">
-                <span className="text-purple-200">Custo da Tinta:</span>
-                <span className="text-white font-medium">R$ {calculations.inkCost.toFixed(2)}</span>
+                <span className="text-purple-200">{t('service.inkCost')}:</span>
+                <span className="text-white font-medium">{formatCurrency(calculations.inkCost)}</span>
               </div>
 
               {calculations.otherCostsTotal > 0 && (
                 <div className="flex justify-between items-center py-2 border-b border-purple-500/20">
-                  <span className="text-purple-200">Outros Custos:</span>
-                  <span className="text-white font-medium">R$ {calculations.otherCostsTotal.toFixed(2)}</span>
+                  <span className="text-purple-200">{t('service.otherCosts')}:</span>
+                  <span className="text-white font-medium">{formatCurrency(calculations.otherCostsTotal)}</span>
                 </div>
               )}
 
               <div className="flex justify-between items-center py-2 border-b border-purple-500/20 text-lg">
-                <span className="text-purple-200 font-medium">Custo Total:</span>
-                <span className="text-white font-bold">R$ {calculations.totalCost.toFixed(2)}</span>
+                <span className="text-purple-200 font-medium">{t('service.totalCost')}:</span>
+                <span className="text-white font-bold">{formatCurrency(calculations.totalCost)}</span>
               </div>
 
               <div className="flex justify-between items-center py-2 border-b border-purple-500/20 text-lg">
-                <span className="text-purple-200 font-medium">Preço de Venda:</span>
-                <span className="text-white font-bold">R$ {formData.salePrice.toFixed(2)}</span>
+                <span className="text-purple-200 font-medium">{t('service.salePrice')}:</span>
+                <span className="text-white font-bold">{formatCurrency(formData.salePrice)}</span>
               </div>
 
               <div className={`flex justify-between items-center py-2 border-b border-purple-500/20 text-lg ${
                 calculations.profit >= 0 ? 'text-green-400' : 'text-red-400'
               }`}>
-                <span className="font-medium">Lucro:</span>
-                <span className="font-bold">R$ {calculations.profit.toFixed(2)}</span>
+                <span className="font-medium">{t('service.profit')}:</span>
+                <span className="font-bold">{formatCurrency(calculations.profit)}</span>
               </div>
 
               <div className={`flex justify-between items-center py-2 text-xl ${
                 calculations.margin >= 0 ? 'text-green-400' : 'text-red-400'
               }`}>
-                <span className="font-medium">Margem:</span>
+                <span className="font-medium">{t('service.margin')}:</span>
                 <span className="font-bold">{calculations.margin.toFixed(1)}%</span>
               </div>
             </div>
@@ -405,12 +420,12 @@ export default function ServiceForm() {
             {saving ? (
               <>
                 <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                <span>Salvando...</span>
+                <span>{t('service.saving')}</span>
               </>
             ) : (
               <>
                 <Save className="w-5 h-5" />
-                <span>Salvar Serviço</span>
+                <span>{t('service.save')}</span>
               </>
             )}
           </button>

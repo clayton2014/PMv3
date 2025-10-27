@@ -105,7 +105,7 @@ export default function Dashboard() {
             </div>
             <span className="text-green-300 text-sm font-medium">{t('dashboard.revenue')}</span>
           </div>
-          <div className="text-2xl font-bold text-white mb-1">R$ {stats.totalRevenue.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-white mb-1">$ {stats.totalRevenue.toFixed(2)}</div>
           <div className="text-green-300 text-sm">{t('dashboard.totalSales')}</div>
         </div>
 
@@ -116,7 +116,7 @@ export default function Dashboard() {
             </div>
             <span className="text-purple-300 text-sm font-medium">{t('dashboard.profit')}</span>
           </div>
-          <div className="text-2xl font-bold text-white mb-1">R$ {stats.totalProfit.toFixed(2)}</div>
+          <div className="text-2xl font-bold text-white mb-1">$ {stats.totalProfit.toFixed(2)}</div>
           <div className="text-purple-300 text-sm">{t('dashboard.totalProfit')}</div>
         </div>
 
@@ -181,15 +181,15 @@ export default function Dashboard() {
                       </div>
                     </td>
                     <td className="py-3 px-4 text-right text-white">
-                      R$ {service.totalCost.toFixed(2)}
+                      $ {service.totalCost.toFixed(2)}
                     </td>
                     <td className="py-3 px-4 text-right text-white">
-                      R$ {service.salePrice.toFixed(2)}
+                      $ {service.salePrice.toFixed(2)}
                     </td>
                     <td className={`py-3 px-4 text-right font-medium ${
                       service.profit >= 0 ? 'text-green-400' : 'text-red-400'
                     }`}>
-                      R$ {service.profit.toFixed(2)}
+                      $ {service.profit.toFixed(2)}
                     </td>
                     <td className={`py-3 px-4 text-right font-medium ${
                       service.margin >= 0 ? 'text-green-400' : 'text-red-400'

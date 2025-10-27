@@ -68,24 +68,30 @@ const ptBR = {
     // Formulário de Serviço
     service: {
       title: 'Novo Serviço',
-      subtitle: 'Adicione um novo serviço de impressão',
+      subtitle: 'Calcule custos e margem de lucro',
       serviceName: 'Nome do Serviço',
+      serviceNamePlaceholder: 'Ex: Banner 2x1m',
       enterServiceName: 'Digite o nome do serviço',
-      selectMaterial: 'Selecionar Material',
-      selectInk: 'Selecionar Tinta',
+      selectMaterial: 'Selecione um material',
+      selectInk: 'Selecione uma tinta',
       quantity: 'Quantidade',
       salePrice: 'Preço de Venda',
       enterSalePrice: 'Digite o preço de venda',
       costSummary: 'Resumo de Custos',
       materialCost: 'Custo do Material',
       inkCost: 'Custo da Tinta',
+      otherCosts: 'Outros Custos',
       totalCost: 'Custo Total',
       profit: 'Lucro',
       margin: 'Margem',
+      calculations: 'Cálculos',
       save: 'Salvar Serviço',
       saving: 'Salvando...',
       success: 'Serviço salvo com sucesso!',
-      error: 'Erro ao salvar serviço'
+      error: 'Erro ao salvar serviço',
+      fillRequired: 'Por favor, preencha todos os campos obrigatórios',
+      add: 'Adicionar',
+      description: 'Descrição'
     },
     // Materiais
     materials: {
@@ -220,24 +226,30 @@ const enUS = {
     // Service Form
     service: {
       title: 'New Service',
-      subtitle: 'Add a new print service',
+      subtitle: 'Calculate costs and profit margin',
       serviceName: 'Service Name',
+      serviceNamePlaceholder: 'Ex: Banner 2x1m',
       enterServiceName: 'Enter service name',
-      selectMaterial: 'Select Material',
-      selectInk: 'Select Ink',
+      selectMaterial: 'Select a material',
+      selectInk: 'Select an ink',
       quantity: 'Quantity',
       salePrice: 'Sale Price',
       enterSalePrice: 'Enter sale price',
       costSummary: 'Cost Summary',
       materialCost: 'Material Cost',
       inkCost: 'Ink Cost',
+      otherCosts: 'Other Costs',
       totalCost: 'Total Cost',
       profit: 'Profit',
       margin: 'Margin',
+      calculations: 'Calculations',
       save: 'Save Service',
       saving: 'Saving...',
       success: 'Service saved successfully!',
-      error: 'Error saving service'
+      error: 'Error saving service',
+      fillRequired: 'Please fill in all required fields',
+      add: 'Add',
+      description: 'Description'
     },
     // Materials
     materials: {

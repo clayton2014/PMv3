@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getMaterials, getInks, saveMaterial, saveInk, deleteMaterial, deleteInk } from '@/lib/supabase-storage';
 import { Material, Ink } from '@/lib/types';
 import { Plus, Edit2, Trash2, Package, Palette, Save, X } from 'lucide-react';
 
 export default function MaterialsManager() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'materials' | 'inks'>('materials');
   const [materials, setMaterials] = useState<Material[]>([]);
   const [inks, setInks] = useState<Ink[]>([]);
@@ -68,7 +70,7 @@ export default function MaterialsManager() {
   };
 
   const handleDeleteMaterial = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir este material?')) {
+    if (confirm(t('materials.confirmDelete'))) {
       try {
         const result = await deleteMaterial(id);
         if (result.success) {
@@ -84,7 +86,7 @@ export default function MaterialsManager() {
   };
 
   const handleDeleteInk = async (id: string) => {
-    if (confirm('Tem certeza que deseja excluir esta tinta?')) {
+    if (confirm(t('inks.confirmDelete'))) {
       try {
         const result = await deleteInk(id);
         if (result.success) {
@@ -102,7 +104,7 @@ export default function MaterialsManager() {
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-white text-xl">Carregando...</div>
+        <div className="text-white text-xl">{t('dashboard.loading')}</div>
       </div>
     );
   }
@@ -111,8 +113,8 @@ export default function MaterialsManager() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Gerenciar Materiais e Tintas</h2>
-          <p className="text-purple-200">Configure seus materiais e tintas padrão</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{t('materials.title')}</h2>
+          <p className="text-purple-200">{t('materials.subtitle')}</p>
         </div>
       </div>
 
@@ -127,7 +129,7 @@ export default function MaterialsManager() {
           }`}
         >
           <Package className="w-4 h-4" />
-          <span>Materiais</span>
+          <span>{t('nav.materials')}</span>
         </button>
         <button
           onClick={() => setActiveTab('inks')}
@@ -138,7 +140,7 @@ export default function MaterialsManager() {
           }`}
         >
           <Palette className="w-4 h-4" />
-          <span>Tintas</span>
+          <span>{t('inks.title')}</span>
         </button>
       </div>
 
@@ -146,13 +148,13 @@ export default function MaterialsManager() {
       {activeTab === 'materials' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold text-white">Materiais</h3>
+            <h3 className="text-xl font-semibold text-white">{t('nav.materials')}</h3>
             <button
               onClick={() => setShowMaterialForm(true)}
               className="flex items-center space-x-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Novo Material</span>
+              <span>{t('materials.addMaterial')}</span>
             </button>
           </div>
 
@@ -168,8 +170,8 @@ export default function MaterialsManager() {
                         <p className="text-white capitalize">{material.type}</p>
                       </div>
                       <div>
-                        <span className="text-purple-300">Custo/m²:</span>
-                        <p className="text-white">R$ {(material.costPerSquareMeter || 0).toFixed(2)}</p>
+                        <span className="text-purple-300">{t('materials.pricePerM2')}:</span>
+                        <p className="text-white">$ {(material.costPerSquareMeter || 0).toFixed(2)}</p>
                       </div>
                       <div>
                         <span className="text-purple-300">Fornecedor:</span>
@@ -206,13 +208,13 @@ export default function MaterialsManager() {
       {activeTab === 'inks' && (
         <div>
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-semibold text-white">Tintas</h3>
+            <h3 className="text-xl font-semibold text-white">{t('inks.title')}</h3>
             <button
               onClick={() => setShowInkForm(true)}
               className="flex items-center space-x-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
             >
               <Plus className="w-4 h-4" />
-              <span>Nova Tinta</span>
+              <span>{t('inks.addInk')}</span>
             </button>
           </div>
 
@@ -228,8 +230,8 @@ export default function MaterialsManager() {
                         <p className="text-white">{ink.color}</p>
                       </div>
                       <div>
-                        <span className="text-purple-300">Custo/ml:</span>
-                        <p className="text-white">R$ {ink.costPerMl.toFixed(4)}</p>
+                        <span className="text-purple-300">{t('inks.pricePerMl')}:</span>
+                        <p className="text-white">$ {ink.costPerMl.toFixed(4)}</p>
                       </div>
                       <div>
                         <span className="text-purple-300">Fornecedor:</span>
@@ -299,6 +301,7 @@ function MaterialForm({
   onSave: (material: Omit<Material, 'createdAt'>) => void; 
   onCancel: () => void; 
 }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     id: material?.id || '',
     name: material?.name || '',
@@ -318,12 +321,12 @@ function MaterialForm({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-purple-500/30">
         <h3 className="text-xl font-semibold text-white mb-4">
-          {material ? 'Editar Material' : 'Novo Material'}
+          {material ? t('materials.edit') : t('materials.addMaterial')}
         </h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-purple-200 text-sm font-medium mb-2">Nome</label>
+            <label className="block text-purple-200 text-sm font-medium mb-2">{t('materials.materialName')}</label>
             <input
               type="text"
               value={formData.name}
@@ -350,7 +353,7 @@ function MaterialForm({
           </div>
 
           <div>
-            <label className="block text-purple-200 text-sm font-medium mb-2">Custo por m²</label>
+            <label className="block text-purple-200 text-sm font-medium mb-2">{t('materials.pricePerM2')}</label>
             <input
               type="number"
               step="0.01"
@@ -388,7 +391,7 @@ function MaterialForm({
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
             >
               <Save className="w-4 h-4" />
-              <span>Salvar</span>
+              <span>{t('materials.save')}</span>
             </button>
             <button
               type="button"
@@ -396,7 +399,7 @@ function MaterialForm({
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
               <X className="w-4 h-4" />
-              <span>Cancelar</span>
+              <span>{t('materials.cancel')}</span>
             </button>
           </div>
         </form>
@@ -415,6 +418,7 @@ function InkForm({
   onSave: (ink: Omit<Ink, 'createdAt'>) => void; 
   onCancel: () => void; 
 }) {
+  const { t } = useTranslation();
   const [formData, setFormData] = useState({
     id: ink?.id || '',
     name: ink?.name || '',
@@ -433,12 +437,12 @@ function InkForm({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
       <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-purple-500/30">
         <h3 className="text-xl font-semibold text-white mb-4">
-          {ink ? 'Editar Tinta' : 'Nova Tinta'}
+          {ink ? t('inks.edit') : t('inks.addInk')}
         </h3>
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-purple-200 text-sm font-medium mb-2">Nome</label>
+            <label className="block text-purple-200 text-sm font-medium mb-2">{t('inks.inkName')}</label>
             <input
               type="text"
               value={formData.name}
@@ -460,7 +464,7 @@ function InkForm({
           </div>
 
           <div>
-            <label className="block text-purple-200 text-sm font-medium mb-2">Custo por ml</label>
+            <label className="block text-purple-200 text-sm font-medium mb-2">{t('inks.pricePerMl')}</label>
             <input
               type="number"
               step="0.0001"
@@ -498,7 +502,7 @@ function InkForm({
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors"
             >
               <Save className="w-4 h-4" />
-              <span>Salvar</span>
+              <span>{t('inks.save')}</span>
             </button>
             <button
               type="button"
@@ -506,7 +510,7 @@ function InkForm({
               className="flex-1 flex items-center justify-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
             >
               <X className="w-4 h-4" />
-              <span>Cancelar</span>
+              <span>{t('inks.cancel')}</span>
             </button>
           </div>
         </form>
