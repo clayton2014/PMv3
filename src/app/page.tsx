@@ -9,7 +9,7 @@ import Reports from '@/components/Reports';
 import AuthSystem from '@/components/AuthSystem';
 import LanguageSelector from '@/components/LanguageSelector';
 import { getCurrentUser, signOut } from '@/lib/supabase-storage';
-import { BarChart3, Plus, Package, FileText, LogOut, User } from 'lucide-react';
+import { BarChart3, Plus, Package, FileText, LogOut, User, Palette } from 'lucide-react';
 
 interface User {
   id: string;
@@ -18,12 +18,15 @@ interface User {
   phone: string;
 }
 
+type Theme = 'purple' | 'royal-blue';
+
 export default function Home() {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<Theme>('purple');
 
   // Garantir que o componente está montado no cliente
   useEffect(() => {
@@ -62,6 +65,36 @@ export default function Home() {
     }
   };
 
+  const toggleTheme = () => {
+    setTheme(theme === 'purple' ? 'royal-blue' : 'purple');
+  };
+
+  // Configurações de tema
+  const themeConfig = {
+    purple: {
+      background: 'bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900',
+      header: 'backdrop-blur-md bg-gray-800/50 border-b border-purple-500/30',
+      nav: 'backdrop-blur-md bg-gray-800/50 border-b border-purple-500/30',
+      main: 'backdrop-blur-md bg-gray-800/50 rounded-2xl border border-purple-500/30 shadow-2xl',
+      activeTab: 'bg-purple-500/30 text-white border border-purple-400/50 shadow-lg',
+      inactiveTab: 'text-purple-200 hover:bg-purple-500/20 hover:text-white',
+      subtitle: 'text-purple-200',
+      userInfo: 'text-purple-200'
+    },
+    'royal-blue': {
+      background: 'bg-gradient-to-br from-blue-900 via-blue-800 to-royal-blue-900',
+      header: 'backdrop-blur-md bg-blue-900/50 border-b border-blue-400/30',
+      nav: 'backdrop-blur-md bg-blue-900/50 border-b border-blue-400/30',
+      main: 'backdrop-blur-md bg-blue-900/50 rounded-2xl border border-blue-400/30 shadow-2xl',
+      activeTab: 'bg-blue-500/30 text-white border border-blue-400/50 shadow-lg',
+      inactiveTab: 'text-blue-200 hover:bg-blue-500/20 hover:text-white',
+      subtitle: 'text-blue-200',
+      userInfo: 'text-blue-200'
+    }
+  };
+
+  const currentTheme = themeConfig[theme];
+
   // Não renderizar nada até estar montado (evita hydration mismatch)
   if (!mounted) {
     return null;
@@ -70,7 +103,7 @@ export default function Home() {
   // Mostrar loading enquanto verifica autenticação
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
+      <div className={`min-h-screen ${currentTheme.background} flex items-center justify-center`}>
         <div className="text-white text-xl">
           {i18n.language === 'en' || i18n.language === 'en-US' ? 'Loading...' : 'Carregando...'}
         </div>
@@ -91,9 +124,9 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900">
+    <div className={`min-h-screen ${currentTheme.background}`}>
       {/* Header */}
-      <header className="backdrop-blur-md bg-gray-800/50 border-b border-purple-500/30 sticky top-0 z-50">
+      <header className={currentTheme.header + ' sticky top-0 z-50'}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-25 sm:h-16">
             <div className="flex items-center space-x-3">
@@ -104,16 +137,32 @@ export default function Home() {
               />
               <div>
                 <h1 className="text-xl font-bold text-white">{t('auth.title')}</h1>
-                <p className="text-purple-200 text-sm">{t('auth.subtitle')}</p>
+                <p className={`${currentTheme.subtitle} text-sm`}>{t('auth.subtitle')}</p>
               </div>
             </div>
 
-            {/* User Info, Language Selector & Logout */}
+            {/* Theme Selector, User Info, Language Selector & Logout */}
             <div className="flex items-center space-x-4">
+              {/* Theme Selector */}
+              <button
+                onClick={toggleTheme}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
+                  theme === 'purple' 
+                    ? 'bg-purple-500/20 text-purple-200 hover:bg-purple-500/30' 
+                    : 'bg-blue-500/20 text-blue-200 hover:bg-blue-500/30'
+                } transition-all`}
+                title={theme === 'purple' ? 'Mudar para Azul Royal' : 'Mudar para Roxo'}
+              >
+                <Palette className="w-4 h-4" />
+                <span className="hidden sm:block">
+                  {theme === 'purple' ? 'Royal' : 'Purple'}
+                </span>
+              </button>
+
               {/* Language Selector */}
               <LanguageSelector />
               
-              <div className="flex items-center space-x-2 text-purple-200">
+              <div className={`flex items-center space-x-2 ${currentTheme.userInfo}`}>
                 <User className="w-5 h-5" />
                 <span className="hidden sm:block">{t('nav.hello')}, {currentUser.name}</span>
               </div>
@@ -130,7 +179,7 @@ export default function Home() {
       </header>
 
       {/* Navigation */}
-      <nav className="backdrop-blur-md bg-gray-800/50 border-b border-purple-500/30">
+      <nav className={currentTheme.nav}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex space-x-1 py-4 overflow-x-auto">
             {tabs.map((tab) => {
@@ -141,8 +190,8 @@ export default function Home() {
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center space-x-2 px-4 py-2 rounded-xl font-medium transition-all duration-300 whitespace-nowrap ${
                     activeTab === tab.id
-                      ? 'bg-purple-500/30 text-white border border-purple-400/50 shadow-lg'
-                      : 'text-purple-200 hover:bg-purple-500/20 hover:text-white'
+                      ? currentTheme.activeTab
+                      : currentTheme.inactiveTab
                   }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -156,7 +205,7 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-2xl border border-purple-500/30 shadow-2xl">
+        <div className={currentTheme.main}>
           {activeTab === 'dashboard' && <Dashboard />}
           {activeTab === 'add-service' && <ServiceForm />}
           {activeTab === 'materials' && <MaterialsManager />}
