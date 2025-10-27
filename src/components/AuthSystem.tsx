@@ -1,14 +1,17 @@
 'use client';
 
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { signUp, signIn, getCurrentUser } from '@/lib/supabase-storage';
 import { User, Mail, Phone, Lock, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import LanguageSelector from './LanguageSelector';
 
 interface AuthSystemProps {
   onLogin: (user: any) => void;
 }
 
 export default function AuthSystem({ onLogin }: AuthSystemProps) {
+  const { t } = useTranslation();
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,7 +46,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
           if (user) {
             onLogin(user);
           } else {
-            setError('Erro ao carregar dados do usuário');
+            setError(t('auth.userDataError'));
           }
         }
       } else {
@@ -64,7 +67,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
         setIsLogin(true);
         setFormData({ name: '', email: '', phone: '', password: '' });
         setError('');
-        alert('Cadastro realizado com sucesso! Faça login para continuar.');
+        alert(t('auth.registerSuccess'));
       }
     } catch (err: any) {
       setError(err.message || 'Erro inesperado');
@@ -82,14 +85,19 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
+      {/* Language Selector - Fixed Position */}
+      <div className="fixed top-4 right-4 z-50">
+        <LanguageSelector />
+      </div>
+
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
             <User className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-3xl font-bold text-white mb-2">PrintManager Pro</h1>
-          <p className="text-purple-200">Gestão de Impressões</p>
+          <h1 className="text-3xl font-bold text-white mb-2">{t('auth.title')}</h1>
+          <p className="text-purple-200">{t('auth.subtitle')}</p>
         </div>
 
         {/* Form Container */}
@@ -110,7 +118,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
               }`}
             >
               <LogIn className="w-4 h-4 inline mr-2" />
-              Login
+              {t('auth.login')}
             </button>
             <button
               type="button"
@@ -126,7 +134,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
               }`}
             >
               <UserPlus className="w-4 h-4 inline mr-2" />
-              Cadastro
+              {t('auth.register')}
             </button>
           </div>
 
@@ -143,7 +151,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
             {!isLogin && (
               <div>
                 <label className="block text-purple-200 text-sm font-medium mb-2">
-                  Nome Completo
+                  {t('auth.name')}
                 </label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
@@ -154,7 +162,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
                     onChange={handleInputChange}
                     required={!isLogin}
                     className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    placeholder="Digite seu nome completo"
+                    placeholder={t('auth.enterName')}
                   />
                 </div>
               </div>
@@ -163,7 +171,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
             {/* Email */}
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
-                Email
+                {t('auth.email')}
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
@@ -174,7 +182,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
                   onChange={handleInputChange}
                   required
                   className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  placeholder="Digite seu email"
+                  placeholder={t('auth.enterEmail')}
                 />
               </div>
             </div>
@@ -183,7 +191,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
             {!isLogin && (
               <div>
                 <label className="block text-purple-200 text-sm font-medium mb-2">
-                  Telefone
+                  {t('auth.phone')}
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
@@ -193,7 +201,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
                     value={formData.phone}
                     onChange={handleInputChange}
                     className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                    placeholder="Digite seu telefone"
+                    placeholder={t('auth.enterPhone')}
                   />
                 </div>
               </div>
@@ -202,7 +210,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
             {/* Senha */}
             <div>
               <label className="block text-purple-200 text-sm font-medium mb-2">
-                Senha
+                {t('auth.password')}
               </label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
@@ -213,7 +221,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
                   onChange={handleInputChange}
                   required
                   className="w-full pl-10 pr-12 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
-                  placeholder="Digite sua senha"
+                  placeholder={t('auth.enterPassword')}
                 />
                 <button
                   type="button"
@@ -234,19 +242,19 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
               {loading ? (
                 <div className="flex items-center justify-center">
                   <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                  {isLogin ? 'Entrando...' : 'Cadastrando...'}
+                  {isLogin ? t('auth.signingIn') : t('auth.signingUp')}
                 </div>
               ) : (
                 <div className="flex items-center justify-center">
                   {isLogin ? (
                     <>
                       <LogIn className="w-5 h-5 mr-2" />
-                      Entrar
+                      {t('auth.signIn')}
                     </>
                   ) : (
                     <>
                       <UserPlus className="w-5 h-5 mr-2" />
-                      Cadastrar
+                      {t('auth.signUp')}
                     </>
                   )}
                 </div>
@@ -258,7 +266,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
           <div className="mt-6 text-center text-purple-300 text-sm">
             {isLogin ? (
               <p>
-                Não tem uma conta?{' '}
+                {t('auth.noAccount')}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -268,12 +276,12 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
                   }}
                   className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
                 >
-                  Cadastre-se aqui
+                  {t('auth.registerHere')}
                 </button>
               </p>
             ) : (
               <p>
-                Já tem uma conta?{' '}
+                {t('auth.hasAccount')}{' '}
                 <button
                   type="button"
                   onClick={() => {
@@ -283,7 +291,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
                   }}
                   className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
                 >
-                  Faça login aqui
+                  {t('auth.loginHere')}
                 </button>
               </p>
             )}

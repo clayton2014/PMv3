@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import Dashboard from '@/components/Dashboard';
 import ServiceForm from '@/components/ServiceForm';
 import MaterialsManager from '@/components/MaterialsManager';
 import Reports from '@/components/Reports';
 import AuthSystem from '@/components/AuthSystem';
+import LanguageSelector from '@/components/LanguageSelector';
 import { getCurrentUser, signOut } from '@/lib/supabase-storage';
 import { BarChart3, Plus, Package, FileText, LogOut, User } from 'lucide-react';
 
@@ -17,6 +19,7 @@ interface User {
 }
 
 export default function Home() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +58,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-xl">Carregando...</div>
+        <div className="text-white text-xl">{t('dashboard.loading')}</div>
       </div>
     );
   }
@@ -66,10 +69,10 @@ export default function Home() {
   }
 
   const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'add-service', label: 'Novo Serviço', icon: Plus },
-    { id: 'materials', label: 'Materiais', icon: Package },
-    { id: 'reports', label: 'Relatórios', icon: FileText },
+    { id: 'dashboard', label: t('nav.dashboard'), icon: BarChart3 },
+    { id: 'add-service', label: t('nav.newService'), icon: Plus },
+    { id: 'materials', label: t('nav.materials'), icon: Package },
+    { id: 'reports', label: t('nav.reports'), icon: FileText },
   ];
 
   return (
@@ -83,23 +86,26 @@ export default function Home() {
                 <BarChart3 className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white">PrintManager Pro</h1>
-                <p className="text-purple-200 text-sm">Gestão de Impressões</p>
+                <h1 className="text-xl font-bold text-white">{t('auth.title')}</h1>
+                <p className="text-purple-200 text-sm">{t('auth.subtitle')}</p>
               </div>
             </div>
 
-            {/* User Info & Logout */}
+            {/* User Info, Language Selector & Logout */}
             <div className="flex items-center space-x-4">
+              {/* Language Selector */}
+              <LanguageSelector />
+              
               <div className="flex items-center space-x-2 text-purple-200">
                 <User className="w-5 h-5" />
-                <span className="hidden sm:block">Olá, {currentUser.name}</span>
+                <span className="hidden sm:block">{t('nav.hello')}, {currentUser.name}</span>
               </div>
               <button
                 onClick={handleLogout}
                 className="flex items-center space-x-2 px-3 py-2 rounded-lg bg-red-500/20 text-red-200 hover:bg-red-500/30 transition-all"
               >
                 <LogOut className="w-4 h-4" />
-                <span className="hidden sm:block">Sair</span>
+                <span className="hidden sm:block">{t('nav.logout')}</span>
               </button>
             </div>
           </div>

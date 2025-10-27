@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getServices } from '@/lib/supabase-storage';
 import { Service } from '@/lib/types';
 import { BarChart3, TrendingUp, DollarSign, Package, Calendar, Filter } from 'lucide-react';
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // 'all', 'week', 'month'
@@ -55,7 +57,7 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="p-8 text-center">
-        <div className="text-white text-xl">Carregando...</div>
+        <div className="text-white text-xl">{t('dashboard.loading')}</div>
       </div>
     );
   }
@@ -64,8 +66,8 @@ export default function Dashboard() {
     <div className="p-8">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2">Dashboard</h2>
-          <p className="text-purple-200">Visão geral dos seus serviços e resultados</p>
+          <h2 className="text-3xl font-bold text-white mb-2">{t('dashboard.title')}</h2>
+          <p className="text-purple-200">{t('dashboard.subtitle')}</p>
         </div>
         
         {/* Filter */}
@@ -76,9 +78,9 @@ export default function Dashboard() {
             onChange={(e) => setFilter(e.target.value)}
             className="px-3 py-2 bg-gray-700/50 border border-purple-500/30 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
           >
-            <option value="all">Todos os períodos</option>
-            <option value="week">Última semana</option>
-            <option value="month">Último mês</option>
+            <option value="all">{t('dashboard.allPeriods')}</option>
+            <option value="week">{t('dashboard.lastWeek')}</option>
+            <option value="month">{t('dashboard.lastMonth')}</option>
           </select>
         </div>
       </div>
@@ -90,10 +92,10 @@ export default function Dashboard() {
             <div className="p-3 bg-blue-500/20 rounded-xl">
               <Package className="w-6 h-6 text-blue-400" />
             </div>
-            <span className="text-blue-300 text-sm font-medium">Serviços</span>
+            <span className="text-blue-300 text-sm font-medium">{t('dashboard.services')}</span>
           </div>
           <div className="text-2xl font-bold text-white mb-1">{stats.totalServices}</div>
-          <div className="text-blue-300 text-sm">Total de serviços</div>
+          <div className="text-blue-300 text-sm">{t('dashboard.totalServices')}</div>
         </div>
 
         <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-2xl p-6 border border-green-500/30">
@@ -101,10 +103,10 @@ export default function Dashboard() {
             <div className="p-3 bg-green-500/20 rounded-xl">
               <DollarSign className="w-6 h-6 text-green-400" />
             </div>
-            <span className="text-green-300 text-sm font-medium">Receita</span>
+            <span className="text-green-300 text-sm font-medium">{t('dashboard.revenue')}</span>
           </div>
           <div className="text-2xl font-bold text-white mb-1">R$ {stats.totalRevenue.toFixed(2)}</div>
-          <div className="text-green-300 text-sm">Total em vendas</div>
+          <div className="text-green-300 text-sm">{t('dashboard.totalSales')}</div>
         </div>
 
         <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-2xl p-6 border border-purple-500/30">
@@ -112,10 +114,10 @@ export default function Dashboard() {
             <div className="p-3 bg-purple-500/20 rounded-xl">
               <TrendingUp className="w-6 h-6 text-purple-400" />
             </div>
-            <span className="text-purple-300 text-sm font-medium">Lucro</span>
+            <span className="text-purple-300 text-sm font-medium">{t('dashboard.profit')}</span>
           </div>
           <div className="text-2xl font-bold text-white mb-1">R$ {stats.totalProfit.toFixed(2)}</div>
-          <div className="text-purple-300 text-sm">Lucro total</div>
+          <div className="text-purple-300 text-sm">{t('dashboard.totalProfit')}</div>
         </div>
 
         <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/20 rounded-2xl p-6 border border-orange-500/30">
@@ -123,10 +125,10 @@ export default function Dashboard() {
             <div className="p-3 bg-orange-500/20 rounded-xl">
               <BarChart3 className="w-6 h-6 text-orange-400" />
             </div>
-            <span className="text-orange-300 text-sm font-medium">Margem</span>
+            <span className="text-orange-300 text-sm font-medium">{t('dashboard.margin')}</span>
           </div>
           <div className="text-2xl font-bold text-white mb-1">{stats.averageMargin.toFixed(1)}%</div>
-          <div className="text-orange-300 text-sm">Margem média</div>
+          <div className="text-orange-300 text-sm">{t('dashboard.averageMargin')}</div>
         </div>
       </div>
 
@@ -135,29 +137,29 @@ export default function Dashboard() {
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-semibold text-white flex items-center space-x-2">
             <Calendar className="w-5 h-5 text-purple-400" />
-            <span>Serviços Recentes</span>
+            <span>{t('dashboard.recentServices')}</span>
           </h3>
         </div>
 
         {filteredServices.length === 0 ? (
           <div className="text-center py-12">
             <Package className="w-16 h-16 text-purple-400 mx-auto mb-4 opacity-50" />
-            <p className="text-purple-200 text-lg mb-2">Nenhum serviço encontrado</p>
-            <p className="text-purple-300 text-sm">Comece criando seu primeiro serviço!</p>
+            <p className="text-purple-200 text-lg mb-2">{t('dashboard.noServices')}</p>
+            <p className="text-purple-300 text-sm">{t('dashboard.createFirst')}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-purple-500/20">
-                  <th className="text-left py-3 px-4 text-purple-200 font-medium">Serviço</th>
-                  <th className="text-left py-3 px-4 text-purple-200 font-medium">Material</th>
-                  <th className="text-left py-3 px-4 text-purple-200 font-medium">Tinta</th>
-                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Custo</th>
-                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Venda</th>
-                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Lucro</th>
-                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Margem</th>
-                  <th className="text-right py-3 px-4 text-purple-200 font-medium">Data</th>
+                  <th className="text-left py-3 px-4 text-purple-200 font-medium">{t('dashboard.service')}</th>
+                  <th className="text-left py-3 px-4 text-purple-200 font-medium">{t('dashboard.material')}</th>
+                  <th className="text-left py-3 px-4 text-purple-200 font-medium">{t('dashboard.ink')}</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">{t('dashboard.cost')}</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">{t('dashboard.sale')}</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">{t('dashboard.profit')}</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">{t('dashboard.margin')}</th>
+                  <th className="text-right py-3 px-4 text-purple-200 font-medium">{t('dashboard.date')}</th>
                 </tr>
               </thead>
               <tbody>
