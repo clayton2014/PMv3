@@ -95,7 +95,7 @@ export default function Home() {
       {/* Header */}
       <header className="backdrop-blur-md bg-gray-800/50 border-b border-purple-500/30 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="flex items-center justify-between h-25 sm:h-16">
             <div className="flex items-center space-x-3">
               <img 
                 src="https://k6hrqrxuu8obbfwn.public.blob.vercel-storage.com/temp/dc87a6e4-9aa4-45e7-9d82-45e7a1ba49c7.png" 
