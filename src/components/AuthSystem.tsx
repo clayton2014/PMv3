@@ -93,8 +93,12 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
       <div className="w-full max-w-md">
         {/* Logo/Header */}
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-            <User className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <img 
+              src="https://k6hrqrxuu8obbfwn.public.blob.vercel-storage.com/temp/75a0d3f2-90f9-4a84-9ab3-e2ba7efae6aa.png" 
+              alt="Protocolo CMYK Logo" 
+              className="w-40 h-40 object-contain"
+            />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">{t('auth.title')}</h1>
           <p className="text-purple-200">{t('auth.subtitle')}</p>
