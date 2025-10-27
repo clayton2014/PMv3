@@ -19,15 +19,23 @@ interface User {
 }
 
 export default function Home() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [mounted, setMounted] = useState(false);
+
+  // Garantir que o componente está montado no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Verificar se há usuário logado ao carregar a página
   useEffect(() => {
-    checkUser();
-  }, []);
+    if (mounted) {
+      checkUser();
+    }
+  }, [mounted]);
 
   const checkUser = async () => {
     try {
@@ -54,11 +62,18 @@ export default function Home() {
     }
   };
 
+  // Não renderizar nada até estar montado (evita hydration mismatch)
+  if (!mounted) {
+    return null;
+  }
+
   // Mostrar loading enquanto verifica autenticação
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center">
-        <div className="text-white text-xl">{t('dashboard.loading')}</div>
+        <div className="text-white text-xl">
+          {i18n.language === 'en' || i18n.language === 'en-US' ? 'Loading...' : 'Carregando...'}
+        </div>
       </div>
     );
   }
