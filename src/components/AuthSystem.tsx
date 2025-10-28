@@ -3,12 +3,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { signUp, signIn, getCurrentUser } from '@/lib/supabase-storage';
-import { User, Mail, Phone, Lock, Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, LogIn, UserPlus, Palette } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 
 interface AuthSystemProps {
   onLogin: (user: any) => void;
 }
+
+type Theme = 'purple' | 'royal-blue' | 'gray';
 
 export default function AuthSystem({ onLogin }: AuthSystemProps) {
   const { t } = useTranslation();
@@ -16,6 +18,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [theme, setTheme] = useState<Theme>('purple');
   
   const [formData, setFormData] = useState({
     name: '',
@@ -23,6 +26,70 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
     phone: '',
     password: ''
   });
+
+  const toggleTheme = () => {
+    if (theme === 'purple') {
+      setTheme('royal-blue');
+    } else if (theme === 'royal-blue') {
+      setTheme('gray');
+    } else {
+      setTheme('purple');
+    }
+  };
+
+  // Configurações de tema
+  const themeConfig = {
+    purple: {
+      background: 'bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900',
+      container: 'backdrop-blur-md bg-gray-800/50 border border-purple-500/30',
+      activeTab: 'bg-purple-500 text-white shadow-lg',
+      inactiveTab: 'text-purple-200 hover:text-white',
+      input: 'bg-gray-700/50 border-purple-500/30 focus:ring-purple-500',
+      button: 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700',
+      icon: 'text-purple-400',
+      text: 'text-purple-200',
+      textSecondary: 'text-purple-300',
+      link: 'text-purple-400 hover:text-purple-300',
+      themeButton: 'bg-purple-500/20 text-purple-200 hover:bg-purple-500/30'
+    },
+    'royal-blue': {
+      background: 'bg-gradient-to-br from-blue-900 via-blue-800 to-royal-blue-900',
+      container: 'backdrop-blur-md bg-blue-900/50 border border-blue-400/30',
+      activeTab: 'bg-blue-500 text-white shadow-lg',
+      inactiveTab: 'text-blue-200 hover:text-white',
+      input: 'bg-blue-700/50 border-blue-500/30 focus:ring-blue-500',
+      button: 'bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700',
+      icon: 'text-blue-400',
+      text: 'text-blue-200',
+      textSecondary: 'text-blue-300',
+      link: 'text-blue-400 hover:text-blue-300',
+      themeButton: 'bg-blue-500/20 text-blue-200 hover:bg-blue-500/30'
+    },
+    gray: {
+      background: 'bg-gradient-to-br from-gray-900 via-gray-800 to-slate-900',
+      container: 'backdrop-blur-md bg-gray-800/50 border border-gray-500/30',
+      activeTab: 'bg-gray-500 text-white shadow-lg',
+      inactiveTab: 'text-gray-200 hover:text-white',
+      input: 'bg-gray-700/50 border-gray-500/30 focus:ring-gray-500',
+      button: 'bg-gradient-to-r from-gray-500 to-slate-600 hover:from-gray-600 hover:to-slate-700',
+      icon: 'text-gray-400',
+      text: 'text-gray-200',
+      textSecondary: 'text-gray-300',
+      link: 'text-gray-400 hover:text-gray-300',
+      themeButton: 'bg-gray-500/20 text-gray-200 hover:bg-gray-500/30'
+    }
+  };
+
+  const currentTheme = themeConfig[theme];
+
+  const getThemeLabel = () => {
+    switch (theme) {
+      case 'purple': return 'Royal';
+      case 'royal-blue': return 'Gray';
+      case 'gray': return 'Purple';
+      default: return 'Royal';
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,9 +151,22 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
-      {/* Language Selector - Fixed Position */}
-      <div className="fixed top-4 right-4 z-50">
+    <div className={`min-h-screen ${currentTheme.background} flex items-center justify-center p-4`}>
+      {/* Top Controls - Language Selector & Theme Selector */}
+      <div className="fixed top-4 right-4 z-50 flex items-center space-x-3">
+        {/* Theme Selector */}
+        <button
+          onClick={toggleTheme}
+          className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${currentTheme.themeButton} transition-all`}
+          title={`Mudar para ${getThemeLabel()}`}
+        >
+          <Palette className="w-4 h-4" />
+          <span className="hidden sm:block">
+            {getThemeLabel()}
+          </span>
+        </button>
+
+        {/* Language Selector */}
         <LanguageSelector />
       </div>
 
@@ -101,11 +181,11 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
             />
           </div>
           <h1 className="text-3xl font-bold text-white mb-2">{t('auth.title')}</h1>
-          <p className="text-purple-200">{t('auth.subtitle')}</p>
+          <p className={currentTheme.text}>{t('auth.subtitle')}</p>
         </div>
 
         {/* Form Container */}
-        <div className="backdrop-blur-md bg-gray-800/50 rounded-2xl border border-purple-500/30 shadow-2xl p-8">
+        <div className={`${currentTheme.container} rounded-2xl shadow-2xl p-8`}>
           {/* Toggle Login/Register */}
           <div className="flex mb-6 bg-gray-700/50 rounded-xl p-1">
             <button
@@ -117,8 +197,8 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-300 ${
                 isLogin
-                  ? 'bg-purple-500 text-white shadow-lg'
-                  : 'text-purple-200 hover:text-white'
+                  ? currentTheme.activeTab
+                  : currentTheme.inactiveTab
               }`}
             >
               <LogIn className="w-4 h-4 inline mr-2" />
@@ -133,8 +213,8 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
               }}
               className={`flex-1 py-2 px-4 rounded-lg font-medium transition-all duration-300 ${
                 !isLogin
-                  ? 'bg-purple-500 text-white shadow-lg'
-                  : 'text-purple-200 hover:text-white'
+                  ? currentTheme.activeTab
+                  : currentTheme.inactiveTab
               }`}
             >
               <UserPlus className="w-4 h-4 inline mr-2" />
@@ -154,18 +234,18 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
             {/* Nome (apenas no cadastro) */}
             {!isLogin && (
               <div>
-                <label className="block text-purple-200 text-sm font-medium mb-2">
+                <label className={`block ${currentTheme.text} text-sm font-medium mb-2`}>
                   {t('auth.name')}
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                  <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${currentTheme.icon}`} />
                   <input
                     type="text"
                     name="name"
                     value={formData.name}
                     onChange={handleInputChange}
                     required={!isLogin}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    className={`w-full pl-10 pr-4 py-3 ${currentTheme.input} rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                     placeholder={t('auth.enterName')}
                   />
                 </div>
@@ -174,18 +254,18 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
 
             {/* Email */}
             <div>
-              <label className="block text-purple-200 text-sm font-medium mb-2">
+              <label className={`block ${currentTheme.text} text-sm font-medium mb-2`}>
                 {t('auth.email')}
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${currentTheme.icon}`} />
                 <input
                   type="email"
                   name="email"
                   value={formData.email}
                   onChange={handleInputChange}
                   required
-                  className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  className={`w-full pl-10 pr-4 py-3 ${currentTheme.input} rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                   placeholder={t('auth.enterEmail')}
                 />
               </div>
@@ -194,17 +274,17 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
             {/* Telefone (apenas no cadastro) */}
             {!isLogin && (
               <div>
-                <label className="block text-purple-200 text-sm font-medium mb-2">
+                <label className={`block ${currentTheme.text} text-sm font-medium mb-2`}>
                   {t('auth.phone')}
                 </label>
                 <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                  <Phone className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${currentTheme.icon}`} />
                   <input
                     type="tel"
                     name="phone"
                     value={formData.phone}
                     onChange={handleInputChange}
-                    className="w-full pl-10 pr-4 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                    className={`w-full pl-10 pr-4 py-3 ${currentTheme.input} rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                     placeholder={t('auth.enterPhone')}
                   />
                 </div>
@@ -213,24 +293,24 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
 
             {/* Senha */}
             <div>
-              <label className="block text-purple-200 text-sm font-medium mb-2">
+              <label className={`block ${currentTheme.text} text-sm font-medium mb-2`}>
                 {t('auth.password')}
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-purple-400" />
+                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${currentTheme.icon}`} />
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
                   value={formData.password}
                   onChange={handleInputChange}
                   required
-                  className="w-full pl-10 pr-12 py-3 bg-gray-700/50 border border-purple-500/30 rounded-xl text-white placeholder-purple-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
+                  className={`w-full pl-10 pr-12 py-3 ${currentTheme.input} rounded-xl text-white placeholder-gray-300 focus:outline-none focus:ring-2 focus:border-transparent transition-all`}
                   placeholder={t('auth.enterPassword')}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-purple-400 hover:text-purple-300 transition-colors"
+                  className={`absolute right-3 top-1/2 transform -translate-y-1/2 ${currentTheme.icon} hover:text-gray-300 transition-colors`}
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -241,7 +321,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 px-4 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-semibold rounded-xl hover:from-purple-600 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`w-full py-3 px-4 ${currentTheme.button} text-white font-semibold rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -267,7 +347,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
           </form>
 
           {/* Footer */}
-          <div className="mt-6 text-center text-purple-300 text-sm">
+          <div className={`mt-6 text-center ${currentTheme.textSecondary} text-sm`}>
             {isLogin ? (
               <p>
                 {t('auth.noAccount')}{' '}
@@ -278,7 +358,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
                     setError('');
                     setFormData({ name: '', email: '', phone: '', password: '' });
                   }}
-                  className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                  className={`${currentTheme.link} font-medium transition-colors`}
                 >
                   {t('auth.registerHere')}
                 </button>
@@ -293,7 +373,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
                     setError('');
                     setFormData({ name: '', email: '', phone: '', password: '' });
                   }}
-                  className="text-purple-400 hover:text-purple-300 font-medium transition-colors"
+                  className={`${currentTheme.link} font-medium transition-colors`}
                 >
                   {t('auth.loginHere')}
                 </button>
