@@ -18,7 +18,7 @@ interface User {
   phone: string;
 }
 
-type Theme = 'purple' | 'royal-blue';
+type Theme = 'purple' | 'royal-blue' | 'gray';
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -66,7 +66,13 @@ export default function Home() {
   };
 
   const toggleTheme = () => {
-    setTheme(theme === 'purple' ? 'royal-blue' : 'purple');
+    if (theme === 'purple') {
+      setTheme('royal-blue');
+    } else if (theme === 'royal-blue') {
+      setTheme('gray');
+    } else {
+      setTheme('purple');
+    }
   };
 
   // Configurações de tema
@@ -90,6 +96,16 @@ export default function Home() {
       inactiveTab: 'text-blue-200 hover:bg-blue-500/20 hover:text-white',
       subtitle: 'text-blue-200',
       userInfo: 'text-blue-200'
+    },
+    gray: {
+      background: 'bg-gradient-to-br from-gray-900 via-gray-800 to-slate-900',
+      header: 'backdrop-blur-md bg-gray-800/50 border-b border-gray-500/30',
+      nav: 'backdrop-blur-md bg-gray-800/50 border-b border-gray-500/30',
+      main: 'backdrop-blur-md bg-gray-800/50 rounded-2xl border border-gray-500/30 shadow-2xl',
+      activeTab: 'bg-gray-500/30 text-white border border-gray-400/50 shadow-lg',
+      inactiveTab: 'text-gray-200 hover:bg-gray-500/20 hover:text-white',
+      subtitle: 'text-gray-200',
+      userInfo: 'text-gray-200'
     }
   };
 
@@ -123,6 +139,24 @@ export default function Home() {
     { id: 'reports', label: t('nav.reports'), icon: FileText },
   ];
 
+  const getThemeLabel = () => {
+    switch (theme) {
+      case 'purple': return 'Royal';
+      case 'royal-blue': return 'Gray';
+      case 'gray': return 'Purple';
+      default: return 'Royal';
+    }
+  };
+
+  const getThemeButtonStyle = () => {
+    switch (theme) {
+      case 'purple': return 'bg-purple-500/20 text-purple-200 hover:bg-purple-500/30';
+      case 'royal-blue': return 'bg-blue-500/20 text-blue-200 hover:bg-blue-500/30';
+      case 'gray': return 'bg-gray-500/20 text-gray-200 hover:bg-gray-500/30';
+      default: return 'bg-purple-500/20 text-purple-200 hover:bg-purple-500/30';
+    }
+  };
+
   return (
     <div className={`min-h-screen ${currentTheme.background}`}>
       {/* Header */}
@@ -146,16 +180,12 @@ export default function Home() {
               {/* Theme Selector */}
               <button
                 onClick={toggleTheme}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${
-                  theme === 'purple' 
-                    ? 'bg-purple-500/20 text-purple-200 hover:bg-purple-500/30' 
-                    : 'bg-blue-500/20 text-blue-200 hover:bg-blue-500/30'
-                } transition-all`}
-                title={theme === 'purple' ? 'Mudar para Azul Royal' : 'Mudar para Roxo'}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg ${getThemeButtonStyle()} transition-all`}
+                title={`Mudar para ${getThemeLabel()}`}
               >
                 <Palette className="w-4 h-4" />
                 <span className="hidden sm:block">
-                  {theme === 'purple' ? 'Royal' : 'Purple'}
+                  {getThemeLabel()}
                 </span>
               </button>
 
