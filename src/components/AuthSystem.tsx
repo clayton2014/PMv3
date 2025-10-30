@@ -2,15 +2,13 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { signUp, signIn, getCurrentUser } from '@/lib/supabase-storage';
+import { signUp, signIn, getCurrentUser, saveUserLayoutPreference, Theme } from '@/lib/supabase-storage';
 import { User, Mail, Phone, Lock, Eye, EyeOff, LogIn, UserPlus, Palette } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 
 interface AuthSystemProps {
   onLogin: (user: any) => void;
 }
-
-type Theme = 'purple' | 'royal-blue' | 'gray' | 'yellow';
 
 export default function AuthSystem({ onLogin }: AuthSystemProps) {
   const { t } = useTranslation();
@@ -127,6 +125,15 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
           const user = await getCurrentUser();
           
           if (user) {
+            // Salvar a preferência de layout selecionada na tela de login
+            try {
+              await saveUserLayoutPreference(user.id, theme);
+              // Atualizar o objeto user com a preferência atual
+              user.layoutPreference = theme;
+            } catch (layoutError) {
+              console.error('Erro ao salvar preferência de layout:', layoutError);
+            }
+            
             onLogin(user);
           } else {
             setError(t('auth.userDataError'));

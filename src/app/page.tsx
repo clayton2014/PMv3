@@ -8,7 +8,7 @@ import MaterialsManager from '@/components/MaterialsManager';
 import Reports from '@/components/Reports';
 import AuthSystem from '@/components/AuthSystem';
 import LanguageSelector from '@/components/LanguageSelector';
-import { getCurrentUser, signOut } from '@/lib/supabase-storage';
+import { getCurrentUser, signOut, saveUserLayoutPreference, Theme } from '@/lib/supabase-storage';
 import { BarChart3, Plus, Package, FileText, LogOut, User, Palette } from 'lucide-react';
 
 interface User {
@@ -16,9 +16,8 @@ interface User {
   name: string;
   email: string;
   phone: string;
+  layoutPreference?: string;
 }
-
-type Theme = 'purple' | 'royal-blue' | 'gray' | 'yellow';
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -43,7 +42,13 @@ export default function Home() {
   const checkUser = async () => {
     try {
       const user = await getCurrentUser();
-      setCurrentUser(user);
+      if (user) {
+        setCurrentUser(user);
+        // Carregar preferência de layout do usuário
+        if (user.layoutPreference) {
+          setTheme(user.layoutPreference as Theme);
+        }
+      }
     } catch (error) {
       console.error('Erro ao verificar usuário:', error);
     } finally {
@@ -53,6 +58,10 @@ export default function Home() {
 
   const handleLogin = (user: User) => {
     setCurrentUser(user);
+    // Carregar preferência de layout do usuário
+    if (user.layoutPreference) {
+      setTheme(user.layoutPreference as Theme);
+    }
   };
 
   const handleLogout = async () => {
@@ -60,20 +69,34 @@ export default function Home() {
       await signOut();
       setCurrentUser(null);
       setActiveTab('dashboard');
+      setTheme('purple'); // Resetar para tema padrão
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }
   };
 
-  const toggleTheme = () => {
+  const toggleTheme = async () => {
+    let newTheme: Theme;
+    
     if (theme === 'purple') {
-      setTheme('royal-blue');
+      newTheme = 'royal-blue';
     } else if (theme === 'royal-blue') {
-      setTheme('gray');
+      newTheme = 'gray';
     } else if (theme === 'gray') {
-      setTheme('yellow');
+      newTheme = 'yellow';
     } else {
-      setTheme('purple');
+      newTheme = 'purple';
+    }
+    
+    setTheme(newTheme);
+    
+    // Salvar preferência no banco de dados se usuário estiver logado
+    if (currentUser) {
+      try {
+        await saveUserLayoutPreference(currentUser.id, newTheme);
+      } catch (error) {
+        console.error('Erro ao salvar preferência de layout:', error);
+      }
     }
   };
 

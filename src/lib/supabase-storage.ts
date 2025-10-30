@@ -7,6 +7,55 @@ export interface User {
   email: string
   name: string
   phone: string
+  layoutPreference?: string
+}
+
+// Tipos para preferências
+export type Theme = 'purple' | 'royal-blue' | 'gray' | 'yellow'
+
+// Funções de Preferências de Layout
+export const getUserLayoutPreference = async (userId: string): Promise<Theme> => {
+  try {
+    const { data, error } = await supabase
+      .from('user_preferences')
+      .select('layout_theme')
+      .eq('user_id', userId)
+      .single()
+
+    if (error) {
+      // Se não existe preferência, retorna o padrão
+      if (error.code === 'PGRST116') {
+        return 'purple'
+      }
+      throw error
+    }
+
+    return (data.layout_theme as Theme) || 'purple'
+  } catch (error) {
+    console.error('Erro ao buscar preferência de layout:', error)
+    return 'purple'
+  }
+}
+
+export const saveUserLayoutPreference = async (userId: string, theme: Theme) => {
+  try {
+    const { error } = await supabase
+      .from('user_preferences')
+      .upsert({
+        user_id: userId,
+        layout_theme: theme,
+        updated_at: new Date().toISOString()
+      }, {
+        onConflict: 'user_id'
+      })
+
+    if (error) throw error
+
+    return { success: true }
+  } catch (error: any) {
+    console.error('Erro ao salvar preferência de layout:', error)
+    return { success: false, error: error.message }
+  }
 }
 
 // Funções de Autenticação
@@ -30,6 +79,14 @@ export const signUp = async (email: string, password: string, name: string, phon
         })
 
       if (profileError) throw profileError
+
+      // Criar preferências padrão do usuário
+      await supabase
+        .from('user_preferences')
+        .insert({
+          user_id: data.user.id,
+          layout_theme: 'purple'
+        })
 
       // Inserir materiais padrão para o novo usuário
       await insertDefaultMaterials(data.user.id)
@@ -108,6 +165,14 @@ export const getCurrentUser = async (): Promise<User | null> => {
           return null
         }
 
+        // Criar preferências padrão
+        await supabase
+          .from('user_preferences')
+          .insert({
+            user_id: user.id,
+            layout_theme: 'purple'
+          })
+
         // Inserir materiais e tintas padrão
         await insertDefaultMaterials(user.id)
         await insertDefaultInks(user.id)
@@ -117,17 +182,22 @@ export const getCurrentUser = async (): Promise<User | null> => {
           email: user.email!,
           name: user.email?.split('@')[0] || 'Usuário',
           phone: '',
+          layoutPreference: 'purple'
         }
       }
       
       return null
     }
 
+    // Buscar preferência de layout
+    const layoutPreference = await getUserLayoutPreference(user.id)
+
     return {
       id: user.id,
       email: user.email!,
       name: profile.name,
       phone: profile.phone || '',
+      layoutPreference
     }
   } catch (error) {
     console.error('Erro inesperado ao buscar usuário:', error)
