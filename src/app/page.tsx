@@ -198,7 +198,7 @@ export default function Home() {
                 title={`Mudar para ${getThemeLabel()}`}
               >
                 <Palette className="w-4 h-4" />
-                <span className="hidden sm:block">
+                <span>
                   {getThemeLabel()}
                 </span>
               </button>
