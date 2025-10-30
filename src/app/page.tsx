@@ -18,7 +18,7 @@ interface User {
   phone: string;
 }
 
-type Theme = 'purple' | 'royal-blue' | 'gray';
+type Theme = 'purple' | 'royal-blue' | 'gray' | 'yellow';
 
 export default function Home() {
   const { t, i18n } = useTranslation();
@@ -70,6 +70,8 @@ export default function Home() {
       setTheme('royal-blue');
     } else if (theme === 'royal-blue') {
       setTheme('gray');
+    } else if (theme === 'gray') {
+      setTheme('yellow');
     } else {
       setTheme('purple');
     }
@@ -106,6 +108,16 @@ export default function Home() {
       inactiveTab: 'text-gray-200 hover:bg-gray-500/20 hover:text-white',
       subtitle: 'text-gray-200',
       userInfo: 'text-gray-200'
+    },
+    yellow: {
+      background: 'bg-gradient-to-br from-yellow-600 via-orange-600 to-amber-700',
+      header: 'backdrop-blur-md bg-yellow-900/50 border-b border-yellow-500/30',
+      nav: 'backdrop-blur-md bg-yellow-900/50 border-b border-yellow-500/30',
+      main: 'backdrop-blur-md bg-yellow-900/50 rounded-2xl border border-yellow-500/30 shadow-2xl',
+      activeTab: 'bg-yellow-500/30 text-black border border-yellow-400/50 shadow-lg',
+      inactiveTab: 'text-yellow-200 hover:bg-yellow-500/20 hover:text-white',
+      subtitle: 'text-yellow-200',
+      userInfo: 'text-yellow-200'
     }
   };
 
@@ -141,10 +153,11 @@ export default function Home() {
 
   const getThemeLabel = () => {
     switch (theme) {
-      case 'purple': return 'Royal';
-      case 'royal-blue': return 'Gray';
-      case 'gray': return 'Purple';
-      default: return 'Royal';
+      case 'purple': return 'Cyan';
+      case 'royal-blue': return 'Black';
+      case 'gray': return 'Yellow';
+      case 'yellow': return 'Magenta';
+      default: return 'Cyan';
     }
   };
 
@@ -153,6 +166,7 @@ export default function Home() {
       case 'purple': return 'bg-purple-500/20 text-purple-200 hover:bg-purple-500/30';
       case 'royal-blue': return 'bg-blue-500/20 text-blue-200 hover:bg-blue-500/30';
       case 'gray': return 'bg-gray-500/20 text-gray-200 hover:bg-gray-500/30';
+      case 'yellow': return 'bg-yellow-500/20 text-yellow-200 hover:bg-yellow-500/30';
       default: return 'bg-purple-500/20 text-purple-200 hover:bg-purple-500/30';
     }
   };

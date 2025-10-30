@@ -10,7 +10,7 @@ interface AuthSystemProps {
   onLogin: (user: any) => void;
 }
 
-type Theme = 'purple' | 'royal-blue' | 'gray';
+type Theme = 'purple' | 'royal-blue' | 'gray' | 'yellow';
 
 export default function AuthSystem({ onLogin }: AuthSystemProps) {
   const { t } = useTranslation();
@@ -32,6 +32,8 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
       setTheme('royal-blue');
     } else if (theme === 'royal-blue') {
       setTheme('gray');
+    } else if (theme === 'gray') {
+      setTheme('yellow');
     } else {
       setTheme('purple');
     }
@@ -77,6 +79,19 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
       textSecondary: 'text-gray-300',
       link: 'text-gray-400 hover:text-gray-300',
       themeButton: 'bg-gray-500/20 text-gray-200 hover:bg-gray-500/30'
+    },
+    yellow: {
+      background: 'bg-gradient-to-br from-yellow-600 via-orange-600 to-amber-700',
+      container: 'backdrop-blur-md bg-yellow-900/50 border border-yellow-500/30',
+      activeTab: 'bg-yellow-500 text-black shadow-lg',
+      inactiveTab: 'text-yellow-200 hover:text-white',
+      input: 'bg-yellow-800/50 border-yellow-500/30 focus:ring-yellow-500',
+      button: 'bg-gradient-to-r from-yellow-500 to-orange-600 hover:from-yellow-600 hover:to-orange-700',
+      icon: 'text-yellow-400',
+      text: 'text-yellow-100',
+      textSecondary: 'text-yellow-200',
+      link: 'text-yellow-300 hover:text-yellow-200',
+      themeButton: 'bg-yellow-500/20 text-yellow-200 hover:bg-yellow-500/30'
     }
   };
 
@@ -84,10 +99,11 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
 
   const getThemeLabel = () => {
     switch (theme) {
-      case 'purple': return 'Royal';
-      case 'royal-blue': return 'Gray';
-      case 'gray': return 'Purple';
-      default: return 'Royal';
+      case 'purple': return 'Cyan';
+      case 'royal-blue': return 'Black';
+      case 'gray': return 'Yellow';
+      case 'yellow': return 'Magenta';
+      default: return 'Cyan';
     }
   };
 
