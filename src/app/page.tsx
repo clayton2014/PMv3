@@ -183,7 +183,7 @@ export default function Home() {
                 alt="Protocolo CMYK Logo" 
                 className="w-20 h-20 object-contain"
               />
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-xl font-bold text-white">{t('auth.title')}</h1>
                 <p className={`${currentTheme.subtitle} text-sm`}>{t('auth.subtitle')}</p>
               </div>
