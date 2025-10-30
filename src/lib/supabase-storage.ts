@@ -13,6 +13,41 @@ export interface User {
 // Tipos para preferências
 export type Theme = 'purple' | 'royal-blue' | 'gray' | 'yellow'
 
+// Funções de Cache Local para Layout
+export const saveLayoutToCache = (theme: Theme) => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('lastLayoutTheme', theme)
+    }
+  } catch (error) {
+    console.error('Erro ao salvar layout no cache local:', error)
+  }
+}
+
+export const getLayoutFromCache = (): Theme => {
+  try {
+    if (typeof window !== 'undefined') {
+      const cachedTheme = localStorage.getItem('lastLayoutTheme')
+      if (cachedTheme && ['purple', 'royal-blue', 'gray', 'yellow'].includes(cachedTheme)) {
+        return cachedTheme as Theme
+      }
+    }
+  } catch (error) {
+    console.error('Erro ao carregar layout do cache local:', error)
+  }
+  return 'purple' // Tema padrão
+}
+
+export const clearLayoutCache = () => {
+  try {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('lastLayoutTheme')
+    }
+  } catch (error) {
+    console.error('Erro ao limpar cache de layout:', error)
+  }
+}
+
 // Funções de Preferências de Layout
 export const getUserLayoutPreference = async (userId: string): Promise<Theme> => {
   try {

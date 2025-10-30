@@ -8,7 +8,7 @@ import MaterialsManager from '@/components/MaterialsManager';
 import Reports from '@/components/Reports';
 import AuthSystem from '@/components/AuthSystem';
 import LanguageSelector from '@/components/LanguageSelector';
-import { getCurrentUser, signOut, saveUserLayoutPreference, Theme } from '@/lib/supabase-storage';
+import { getCurrentUser, signOut, saveUserLayoutPreference, saveLayoutToCache, Theme } from '@/lib/supabase-storage';
 import { BarChart3, Plus, Package, FileText, LogOut, User, Palette } from 'lucide-react';
 
 interface User {
@@ -66,10 +66,13 @@ export default function Home() {
 
   const handleLogout = async () => {
     try {
+      // Salvar o layout atual no cache local antes de fazer logout
+      saveLayoutToCache(theme);
+      
       await signOut();
       setCurrentUser(null);
       setActiveTab('dashboard');
-      setTheme('purple'); // Resetar para tema padrão
+      // Não resetar o tema - ele será mantido pelo cache local na tela de login
     } catch (error) {
       console.error('Erro ao fazer logout:', error);
     }
@@ -89,6 +92,9 @@ export default function Home() {
     }
     
     setTheme(newTheme);
+    
+    // Salvar no cache local imediatamente
+    saveLayoutToCache(newTheme);
     
     // Salvar preferência no banco de dados se usuário estiver logado
     if (currentUser) {

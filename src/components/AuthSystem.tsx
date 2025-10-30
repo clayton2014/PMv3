@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { signUp, signIn, getCurrentUser, saveUserLayoutPreference, Theme } from '@/lib/supabase-storage';
+import { signUp, signIn, getCurrentUser, saveUserLayoutPreference, getLayoutFromCache, saveLayoutToCache, Theme } from '@/lib/supabase-storage';
 import { User, Mail, Phone, Lock, Eye, EyeOff, LogIn, UserPlus, Palette } from 'lucide-react';
 import LanguageSelector from './LanguageSelector';
 
@@ -17,6 +17,7 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [theme, setTheme] = useState<Theme>('purple');
+  const [mounted, setMounted] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -25,16 +26,35 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
     password: ''
   });
 
-  const toggleTheme = () => {
-    if (theme === 'purple') {
-      setTheme('royal-blue');
-    } else if (theme === 'royal-blue') {
-      setTheme('gray');
-    } else if (theme === 'gray') {
-      setTheme('yellow');
-    } else {
-      setTheme('purple');
+  // Garantir que o componente está montado no cliente
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Carregar tema do cache local ao montar o componente
+  useEffect(() => {
+    if (mounted) {
+      const cachedTheme = getLayoutFromCache();
+      setTheme(cachedTheme);
     }
+  }, [mounted]);
+
+  const toggleTheme = () => {
+    let newTheme: Theme;
+    
+    if (theme === 'purple') {
+      newTheme = 'royal-blue';
+    } else if (theme === 'royal-blue') {
+      newTheme = 'gray';
+    } else if (theme === 'gray') {
+      newTheme = 'yellow';
+    } else {
+      newTheme = 'purple';
+    }
+    
+    setTheme(newTheme);
+    // Salvar no cache local imediatamente
+    saveLayoutToCache(newTheme);
   };
 
   // Configurações de tema
@@ -172,6 +192,11 @@ export default function AuthSystem({ onLogin }: AuthSystemProps) {
       [e.target.name]: e.target.value
     });
   };
+
+  // Não renderizar nada até estar montado (evita hydration mismatch)
+  if (!mounted) {
+    return null;
+  }
 
   return (
     <div className={`min-h-screen ${currentTheme.background} flex items-center justify-center p-4`}>
